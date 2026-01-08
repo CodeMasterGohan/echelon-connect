@@ -274,7 +274,35 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 24),
+          // Helper buttons (10, 20, 30)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildPresetButton(ref, 10),
+              _buildPresetButton(ref, 20),
+              _buildPresetButton(ref, 30),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPresetButton(WidgetRef ref, int targetResistance) {
+    return ElevatedButton(
+      onPressed: () => ref.read(bleManagerProvider.notifier).setResistance(targetResistance),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.textPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      ),
+      child: Text(
+        targetResistance.toString(),
+        style: AppTypography.titleMedium.copyWith(
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }
