@@ -7,6 +7,7 @@ import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
+import 'package:echelon_connect/features/peloton/presentation/ride_list_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -49,6 +50,18 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          // Peloton Button
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const PelotonRideListScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.fitness_center), // Using fitness_center strictly as a placeholder icon
+            tooltip: 'Peloton Classes',
+          ),
           // Connection status indicator
           Container(
             margin: const EdgeInsets.only(right: 16),
@@ -150,8 +163,8 @@ class DashboardScreen extends ConsumerWidget {
                   // Speed
                   MetricTile(
                     label: 'Speed',
-                    value: metrics.speed.toStringAsFixed(1),
-                    unit: 'km/h',
+                    value: (metrics.speed * 0.621371).toStringAsFixed(1),
+                    unit: 'MPH',
                     icon: Icons.directions_bike,
                   ),
                 ],
@@ -173,9 +186,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: CompactMetricTile(
+                  child: CompactMetricTile(
                   label: 'Distance',
-                  value: '${metrics.distance.toStringAsFixed(2)} km',
+                  value: '${(metrics.distance * 0.621371).toStringAsFixed(2)} mi',
                   icon: Icons.straighten,
                 ),
               ),
@@ -346,6 +359,54 @@ class DashboardScreen extends ConsumerWidget {
               style: AppTypography.bodyLarge,
               textAlign: TextAlign.center,
             ),
+            Text(
+              'Connected to ${bleState.connectedDevice?.name ?? "Echelon"}',
+              style: AppTypography.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            
+            if (bleState.lastWorkoutMetrics != null && bleState.lastWorkoutMetrics!.elapsedSeconds > 0) ...[
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.surfaceBorder),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'PREVIOUS WORKOUT',
+                      style: AppTypography.labelLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem(
+                          label: 'TIME',
+                          value: _formatDuration(bleState.lastWorkoutMetrics!.elapsedSeconds),
+                          icon: Icons.timer_outlined,
+                        ),
+                        _buildStatItem(
+                          label: 'DIST',
+                          value: '${(bleState.lastWorkoutMetrics!.distance * 0.621371).toStringAsFixed(2)} mi',
+                          icon: Icons.straighten,
+                        ),
+                        _buildStatItem(
+                          label: 'CALS',
+                          value: bleState.lastWorkoutMetrics!.calories.toStringAsFixed(0),
+                          icon: Icons.local_fire_department,
+                          color: AppColors.warning,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 32),
             
             // Start new workout button
@@ -540,6 +601,29 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+  Widget _buildStatItem({
+    required String label,
+    required String value,
+    required IconData icon,
+    Color? color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color ?? AppColors.textMuted, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: AppTypography.labelSmall,
+        ),
+      ],
     );
   }
 }

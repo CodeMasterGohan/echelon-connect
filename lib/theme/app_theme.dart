@@ -134,6 +134,13 @@ class AppTypography {
         letterSpacing: 1,
       );
 
+  static TextStyle get labelSmall => GoogleFonts.inter(
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textMuted, // Using textMuted as default for labels
+        letterSpacing: 0.5,
+      );
+
   /// Metric value style (large numbers)
   static TextStyle get metricValue => GoogleFonts.inter(
         fontSize: 42,

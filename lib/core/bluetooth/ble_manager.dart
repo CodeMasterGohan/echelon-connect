@@ -41,6 +41,7 @@ class BleManagerState {
   final List<EchelonDeviceInfo> discoveredDevices;
   final EchelonDeviceInfo? connectedDevice;
   final WorkoutMetrics currentMetrics;
+  final WorkoutMetrics? lastWorkoutMetrics;
   final String? errorMessage;
 
   const BleManagerState({
@@ -48,6 +49,7 @@ class BleManagerState {
     this.discoveredDevices = const [],
     this.connectedDevice = null,
     this.currentMetrics = const WorkoutMetrics(),
+    this.lastWorkoutMetrics,
     this.errorMessage = null,
   });
 
@@ -56,6 +58,7 @@ class BleManagerState {
     List<EchelonDeviceInfo>? discoveredDevices,
     EchelonDeviceInfo? connectedDevice,
     WorkoutMetrics? currentMetrics,
+    WorkoutMetrics? lastWorkoutMetrics,
     String? errorMessage,
   }) {
     return BleManagerState(
@@ -63,6 +66,7 @@ class BleManagerState {
       discoveredDevices: discoveredDevices ?? this.discoveredDevices,
       connectedDevice: connectedDevice ?? this.connectedDevice,
       currentMetrics: currentMetrics ?? this.currentMetrics,
+      lastWorkoutMetrics: lastWorkoutMetrics ?? this.lastWorkoutMetrics,
       errorMessage: errorMessage,
     );
   }
@@ -370,10 +374,14 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
   /// End the current workout without disconnecting
   /// Resets metrics and returns to idle state while keeping BLE connection
   void endWorkout() {
+    // Save current metrics before resetting
+    final lastMetrics = state.currentMetrics;
+    
     _totalCalories = 0;
     _lastMetricsTime = DateTime.now();
     state = state.copyWith(
       currentMetrics: const WorkoutMetrics(),
+      lastWorkoutMetrics: lastMetrics,
       connectionState: EchelonConnectionState.idle,
     );
   }
