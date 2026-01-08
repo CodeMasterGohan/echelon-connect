@@ -47,10 +47,10 @@ class BleManagerState {
   const BleManagerState({
     this.connectionState = EchelonConnectionState.disconnected,
     this.discoveredDevices = const [],
-    this.connectedDevice = null,
+    this.connectedDevice,
     this.currentMetrics = const WorkoutMetrics(),
     this.lastWorkoutMetrics,
-    this.errorMessage = null,
+    this.errorMessage,
   });
 
   BleManagerState copyWith({
@@ -210,9 +210,10 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
         throw Exception('Required characteristics not found');
       }
 
-      // Enable notifications
-      await _notify1Char!.setNotifyValue(true);
-      await _notify2Char!.setNotifyValue(true);
+      // Enable notifications with retry logic for GATT errors
+      await _setNotifyWithRetry(_notify1Char!);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _setNotifyWithRetry(_notify2Char!);
 
       // Subscribe to notifications
       _notify1Subscription = _notify1Char!.onValueReceived.listen(_onDataReceived);
@@ -233,6 +234,22 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
         connectionState: EchelonConnectionState.error,
         errorMessage: 'Connection failed: $e',
       );
+    }
+  }
+
+  /// Helper to set notify value with retry logic for GATT errors
+  Future<void> _setNotifyWithRetry(BluetoothCharacteristic char, {int maxRetries = 3}) async {
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await char.setNotifyValue(true);
+        return; // Success
+      } catch (e) {
+        if (attempt == maxRetries) {
+          rethrow; // Final attempt failed
+        }
+        // Wait before retry with exponential backoff
+        await Future.delayed(Duration(milliseconds: 300 * attempt));
+      }
     }
   }
 

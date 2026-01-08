@@ -3,11 +3,15 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:android_pip/android_pip.dart';
+import 'package:android_pip/pip_widget.dart';
 import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
-import 'package:echelon_connect/features/peloton/presentation/ride_list_screen.dart';
+import 'package:echelon_connect/features/dashboard/widgets/pip_overlay.dart';
+import 'package:echelon_connect/core/bluetooth/ftms_service.dart';
+
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -25,85 +29,100 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bleState = ref.watch(bleManagerProvider);
+    final isAdvertising = ref.watch(ftmsServiceProvider);
     final metrics = bleState.currentMetrics;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    // Wrap entire scaffold in PipWidget - in PiP mode, only show the overlay (no AppBar)
+    return PipWidget(
+      pipBuilder: (context) => const PipOverlay(),
+      builder: (context) => Scaffold(
         backgroundColor: AppColors.background,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.bolt,
-              color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
-              size: 24,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.bolt,
+                color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'ECHELON CONNECT',
+                style: AppTypography.titleMedium.copyWith(
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            // Picture-in-Picture Button (only during workout)
+            if (bleState.isWorkoutActive)
+              IconButton(
+                onPressed: () => AndroidPIP().enterPipMode(
+                  aspectRatio: [16, 9],
+                  autoEnter: true,
+                ),
+                icon: const Icon(
+                  Icons.picture_in_picture,
+                  color: AppColors.accent,
+                ),
+                tooltip: 'Enter Picture-in-Picture',
+              ),
+            // FTMS Bridge Button
+            IconButton(
+              onPressed: () => ref.read(ftmsServiceProvider.notifier).toggle(),
+              icon: Icon(
+                Icons.bluetooth_audio,
+                color: isAdvertising ? AppColors.success : AppColors.textMuted,
+              ), // Using bluetooth_audio as "Broadcast" icon
+              tooltip: isAdvertising ? 'Stop Broadcasting' : 'Broadcast to Zwift/MyWhoosh',
             ),
-            const SizedBox(width: 8),
-            Text(
-              'ECHELON CONNECT',
-              style: AppTypography.titleMedium.copyWith(
-                letterSpacing: 2,
-                fontWeight: FontWeight.w700,
+            // Connection status indicator
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: bleState.isConnected 
+                    ? AppColors.success.withOpacity(0.2)
+                    : AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: bleState.isConnected ? AppColors.success : AppColors.surfaceBorder,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    bleState.isConnected ? 'Connected' : 'Disconnected',
+                    style: AppTypography.labelMedium.copyWith(
+                      color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        actions: [
-          // Peloton Button
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const PelotonRideListScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.fitness_center), // Using fitness_center strictly as a placeholder icon
-            tooltip: 'Peloton Classes',
-          ),
-          // Connection status indicator
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: bleState.isConnected 
-                  ? AppColors.success.withOpacity(0.2)
-                  : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: bleState.isConnected ? AppColors.success : AppColors.surfaceBorder,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  bleState.isConnected ? 'Connected' : 'Disconnected',
-                  style: AppTypography.labelMedium.copyWith(
-                    color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: bleState.isWorkoutActive
-            ? _buildConnectedView(context, ref, metrics)
-            : bleState.connectionState == EchelonConnectionState.idle
-                ? _buildIdleView(context, ref, bleState)
-                : _buildDisconnectedView(context, ref, bleState),
+        body: SafeArea(
+          child: bleState.isWorkoutActive
+              ? _buildConnectedView(context, ref, metrics)
+              : bleState.connectionState == EchelonConnectionState.idle
+                  ? _buildIdleView(context, ref, bleState)
+                  : _buildDisconnectedView(context, ref, bleState),
+        ),
       ),
     );
   }
@@ -111,26 +130,95 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildConnectedView(BuildContext context, WidgetRef ref, WorkoutMetrics metrics) {
     final powerColor = AppColors.getPowerZoneColor(metrics.power, 200); // TODO: Get FTP from settings
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Main metrics grid
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isTablet = constraints.maxWidth > 600;
-              final crossAxisCount = isTablet ? 3 : 2;
-              final spacing = 12.0;
-              
-              return GridView.count(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLandscapeTablet = constraints.maxWidth > 700 && constraints.maxHeight < constraints.maxWidth;
+        
+        if (isLandscapeTablet) {
+          // Landscape tablet layout - side by side (metrics left, controls right)
+          return Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left side - Metrics
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      // Main metrics - 2x2 grid, compact
+                      Expanded(
+                        child: GridView.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 1.6,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            _buildCompactMetric('Power', metrics.power.toString(), 'W', Icons.flash_on, powerColor),
+                            _buildCompactMetric('Cadence', metrics.cadence.toString(), 'RPM', Icons.speed, AppColors.accent),
+                            _buildCompactMetric('Speed', (metrics.speed * 0.621371).toStringAsFixed(1), 'MPH', Icons.directions_bike, AppColors.textPrimary),
+                            _buildCompactMetric('Resistance', '${metrics.resistance}/${EchelonProtocol.maxResistance} (${PowerCalculator.bikeResistanceToPeloton(metrics.resistance)}%)', '', Icons.fitness_center, AppColors.secondary),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Secondary metrics row
+                      Row(
+                        children: [
+                          Expanded(child: _buildMiniMetric(Icons.timer_outlined, _formatDuration(metrics.elapsedSeconds))),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildMiniMetric(Icons.straighten, '${(metrics.distance * 0.621371).toStringAsFixed(2)} mi')),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildMiniMetric(Icons.local_fire_department, '${metrics.calories.toStringAsFixed(0)} cal', AppColors.warning)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Right side - Resistance controls + End button
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      Expanded(child: _buildCompactResistanceControls(ref, metrics.resistance)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => ref.read(bleManagerProvider.notifier).endWorkout(),
+                          icon: const Icon(Icons.stop, size: 18),
+                          label: const Text('END'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: const BorderSide(color: AppColors.error),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        // Portrait / phone layout - original vertical scrolling
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Main metrics grid
+              GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: spacing,
-                crossAxisSpacing: spacing,
-                childAspectRatio: isTablet ? 1.3 : 1.1,
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.1,
                 children: [
-                  // Power
                   MetricTile(
                     label: 'Power',
                     value: metrics.power.toString(),
@@ -141,7 +229,6 @@ class DashboardScreen extends ConsumerWidget {
                     progressColor: powerColor,
                     isLarge: true,
                   ),
-                  // Cadence
                   MetricTile(
                     label: 'Cadence',
                     value: metrics.cadence.toString(),
@@ -150,17 +237,15 @@ class DashboardScreen extends ConsumerWidget {
                     valueColor: AppColors.accent,
                     progress: (metrics.cadence / 120).clamp(0.0, 1.0),
                   ),
-                  // Resistance
                   MetricTile(
                     label: 'Resistance',
                     value: '${metrics.resistance}/${EchelonProtocol.maxResistance}',
-                    unit: '',
+                    unit: '(${PowerCalculator.bikeResistanceToPeloton(metrics.resistance)}%)',
                     icon: Icons.fitness_center,
                     valueColor: AppColors.secondary,
                     progress: metrics.resistance / EchelonProtocol.maxResistance,
                     progressColor: AppColors.secondary,
                   ),
-                  // Speed
                   MetricTile(
                     label: 'Speed',
                     value: (metrics.speed * 0.621371).toStringAsFixed(1),
@@ -168,67 +253,183 @@ class DashboardScreen extends ConsumerWidget {
                     icon: Icons.directions_bike,
                   ),
                 ],
-              );
-            },
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Secondary metrics row
-          Row(
-            children: [
-              Expanded(
-                child: CompactMetricTile(
-                  label: 'Elapsed',
-                  value: _formatDuration(metrics.elapsedSeconds),
-                  icon: Icons.timer_outlined,
-                ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: CompactMetricTile(
-                  label: 'Distance',
-                  value: '${(metrics.distance * 0.621371).toStringAsFixed(2)} mi',
-                  icon: Icons.straighten,
-                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: CompactMetricTile(
+                      label: 'Elapsed',
+                      value: _formatDuration(metrics.elapsedSeconds),
+                      icon: Icons.timer_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: CompactMetricTile(
+                      label: 'Distance',
+                      value: '${(metrics.distance * 0.621371).toStringAsFixed(2)} mi',
+                      icon: Icons.straighten,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: CompactMetricTile(
+                      label: 'Calories',
+                      value: metrics.calories.toStringAsFixed(0),
+                      icon: Icons.local_fire_department,
+                      color: AppColors.warning,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CompactMetricTile(
-                  label: 'Calories',
-                  value: metrics.calories.toStringAsFixed(0),
-                  icon: Icons.local_fire_department,
-                  color: AppColors.warning,
+              const SizedBox(height: 24),
+              _buildResistanceControls(ref, metrics.resistance),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => ref.read(bleManagerProvider.notifier).endWorkout(),
+                  icon: const Icon(Icons.stop),
+                  label: const Text('END WORKOUT'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
             ],
           ),
-          
-          const SizedBox(height: 24),
-          
-          // Resistance controls
-          _buildResistanceControls(ref, metrics.resistance),
-          
-          const SizedBox(height: 24),
-          
-          // Stop workout button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                ref.read(bleManagerProvider.notifier).endWorkout();
-              },
-              icon: const Icon(Icons.stop),
-              label: const Text('END WORKOUT'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
+        );
+      },
+    );
+  }
+
+  // Compact metric tile for landscape tablet layout
+  Widget _buildCompactMetric(String label, String value, String unit, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.surfaceBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 6),
+              Text(label.toUpperCase(), style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(value, style: AppTypography.displayMedium.copyWith(color: color, fontSize: 28)),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Text(unit, style: AppTypography.labelMedium),
+              ],
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  // Mini metric for secondary stats in landscape
+  Widget _buildMiniMetric(IconData icon, String value, [Color? color]) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.surfaceBorder),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 16, color: color ?? AppColors.textMuted),
+          const SizedBox(width: 6),
+          Flexible(child: Text(value, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+        ],
+      ),
+    );
+  }
+
+  // Compact resistance controls for landscape tablet
+  Widget _buildCompactResistanceControls(WidgetRef ref, int currentResistance) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.surfaceBorder),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('RESISTANCE', style: AppTypography.labelMedium),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: currentResistance > 1
+                    ? () => ref.read(bleManagerProvider.notifier).setResistance(currentResistance - 1)
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+                iconSize: 40,
+                color: AppColors.accent,
+              ),
+              const SizedBox(width: 16),
+              Column(
+                children: [
+                  Text(currentResistance.toString(), style: AppTypography.displayMedium.copyWith(color: AppColors.secondary)),
+                  Text('of ${EchelonProtocol.maxResistance}', style: AppTypography.labelSmall),
+                ],
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                onPressed: currentResistance < EchelonProtocol.maxResistance
+                    ? () => ref.read(bleManagerProvider.notifier).setResistance(currentResistance + 1)
+                    : null,
+                icon: const Icon(Icons.add_circle_outline),
+                iconSize: 40,
+                color: AppColors.accent,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSmallPresetButton(ref, 10),
+              _buildSmallPresetButton(ref, 20),
+              _buildSmallPresetButton(ref, 30),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallPresetButton(WidgetRef ref, int targetResistance) {
+    return ElevatedButton(
+      onPressed: () => ref.read(bleManagerProvider.notifier).setResistance(targetResistance),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.textPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        minimumSize: const Size(50, 36),
+      ),
+      child: Text(targetResistance.toString(), style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold)),
     );
   }
 
