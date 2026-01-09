@@ -72,6 +72,7 @@ class _EchelonConnectAppState extends State<EchelonConnectApp> with WidgetsBindi
       Permission.bluetooth,
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
+      Permission.bluetoothAdvertise,
       Permission.location,
     ].request();
   }

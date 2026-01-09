@@ -1,5 +1,5 @@
 package com.echelonconnect.echelon_connect
 
-import io.flutter.embedding.android.FlutterActivity
+import com.thesparks.android_pip.PipCallbackHelperActivityWrapper
 
-class MainActivity : FlutterActivity()
+class MainActivity : PipCallbackHelperActivityWrapper()

@@ -164,34 +164,7 @@ class EchelonProtocol {
     return sum & 0xFF;
   }
 
-  // ============================================
-  // Peloton Resistance Conversion
-  // From bikeResistanceToPeloton() in echelonconnectsport.cpp
-  // ============================================
 
-  /// Convert Echelon resistance to Peloton scale
-  /// Formula: 0.0097x³ - 0.4972x² + 10.126x - 37.08
-  static double resistanceToPeloton(int resistance, {double gain = 1.0, double offset = 0.0}) {
-    final r = resistance.toDouble();
-    double p = (0.0097 * r * r * r) - (0.4972 * r * r) + (10.126 * r) - 37.08;
-    if (p < 0) p = 0;
-    return (p * gain) + offset;
-  }
-
-  /// Convert Peloton resistance to Echelon
-  static int pelotonToResistance(int pelotonResistance, {double gain = 1.0, double offset = 0.0}) {
-    for (int i = 1; i < maxResistance; i++) {
-      final current = resistanceToPeloton(i, gain: gain, offset: offset);
-      final next = resistanceToPeloton(i + 1, gain: gain, offset: offset);
-      if (current <= pelotonResistance && next > pelotonResistance) {
-        return i;
-      }
-    }
-    if (pelotonResistance < resistanceToPeloton(1, gain: gain, offset: offset)) {
-      return 1;
-    }
-    return maxResistance;
-  }
 }
 
 /// Power (Watts) Calculator
@@ -271,5 +244,16 @@ class PowerCalculator {
     if (watts == 0) return 0;
     // (( (0.048* Output in watts +1.19) * body weight in kg * 3.5) / 200 ) / 60
     return ((0.048 * watts + 1.19) * weightKg * 3.5) / 200.0 / 60.0;
+  }
+
+  /// Convert Echelon bike resistance (1-32) to Peloton percentage (0-100%)
+  /// Formula from echelonconnectsport.cpp bikeResistanceToPeloton():
+  /// p = 0.0097*r³ - 0.4972*r² + 10.126*r - 37.08
+  static int bikeResistanceToPeloton(int resistance) {
+    final r = resistance.toDouble();
+    double p = (0.0097 * r * r * r) - (0.4972 * r * r) + (10.126 * r) - 37.08;
+    if (p < 0) p = 0;
+    if (p > 100) p = 100;
+    return p.round();
   }
 }
