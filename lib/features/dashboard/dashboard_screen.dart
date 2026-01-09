@@ -11,6 +11,7 @@ import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
 import 'package:echelon_connect/features/dashboard/widgets/pip_overlay.dart';
 import 'package:echelon_connect/core/bluetooth/ftms_service.dart';
+import 'package:echelon_connect/features/workouts/workouts_list_screen.dart';
 
 
 class DashboardScreen extends ConsumerWidget {
@@ -58,6 +59,21 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           actions: [
+            // Custom Workouts Button (always visible when connected)
+            if (bleState.isConnected)
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WorkoutsListScreen()),
+                  );
+                },
+                icon: const Icon(
+                  Icons.fitness_center,
+                  color: AppColors.accent,
+                ),
+                tooltip: 'Custom Workouts',
+              ),
             // Picture-in-Picture Button (only during workout)
             if (bleState.isWorkoutActive)
               IconButton(
@@ -618,7 +634,29 @@ class DashboardScreen extends ConsumerWidget {
                   ref.read(bleManagerProvider.notifier).startWorkout();
                 },
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('START NEW WORKOUT'),
+                label: const Text('START FREE WORKOUT'),
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Custom workouts button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WorkoutsListScreen()),
+                  );
+                },
+                icon: const Icon(Icons.fitness_center),
+                label: const Text('CUSTOM WORKOUTS'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  side: const BorderSide(color: AppColors.accent),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ),
             
