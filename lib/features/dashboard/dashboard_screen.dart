@@ -5,11 +5,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
+import 'package:echelon_connect/core/services/voice_control_service.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize voice control on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(voiceControlProvider.notifier).initialize();
+    });
+  }
 
   String _formatDuration(int seconds) {
     final hours = seconds ~/ 3600;
@@ -22,9 +37,23 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final bleState = ref.watch(bleManagerProvider);
     final metrics = bleState.currentMetrics;
+
+    // Auto-enable/disable voice control based on workout state
+    ref.listen<BleManagerState>(bleManagerProvider, (previous, next) {
+      final wasActive = previous?.isWorkoutActive ?? false;
+      final isActive = next.isWorkoutActive;
+      
+      if (!wasActive && isActive) {
+        // Workout just started - auto-enable voice control
+        ref.read(voiceControlProvider.notifier).setEnabled(true);
+      } else if (wasActive && !isActive) {
+        // Workout ended - disable voice control
+        ref.read(voiceControlProvider.notifier).setEnabled(false);
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,6 +78,9 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          // Voice control toggle (only show during workout)
+          if (bleState.isWorkoutActive)
+            _buildVoiceControlButton(ref),
           // Connection status indicator
           Container(
             margin: const EdgeInsets.only(right: 16),
@@ -219,7 +251,47 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildVoiceControlButton(WidgetRef ref) {
+    final voiceState = ref.watch(voiceControlProvider);
+    final isActive = voiceState.isEnabled && voiceState.isListening;
+    
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      child: IconButton(
+        onPressed: () async {
+          final notifier = ref.read(voiceControlProvider.notifier);
+          if (!voiceState.isAvailable) {
+            await notifier.initialize();
+          }
+          await notifier.toggle();
+        },
+        icon: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive 
+                ? AppColors.accent.withOpacity(0.2)
+                : AppColors.surfaceLight,
+            border: Border.all(
+              color: isActive ? AppColors.accent : AppColors.surfaceBorder,
+              width: isActive ? 2 : 1,
+            ),
+          ),
+          child: Icon(
+            voiceState.isEnabled ? Icons.mic : Icons.mic_off,
+            color: isActive ? AppColors.accent : AppColors.textMuted,
+            size: 20,
+          ),
+        ),
+        tooltip: voiceState.isEnabled ? 'Voice control ON' : 'Voice control OFF',
+      ),
+    );
+  }
+
   Widget _buildResistanceControls(WidgetRef ref, int currentResistance) {
+    final voiceState = ref.watch(voiceControlProvider);
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -284,6 +356,45 @@ class DashboardScreen extends ConsumerWidget {
               _buildPresetButton(ref, 30),
             ],
           ),
+          // Voice control status indicator
+          if (voiceState.isEnabled) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: voiceState.isListening 
+                    ? AppColors.accent.withOpacity(0.1)
+                    : AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: voiceState.isListening 
+                      ? AppColors.accent.withOpacity(0.5)
+                      : AppColors.surfaceBorder,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    voiceState.isListening ? Icons.mic : Icons.mic_off,
+                    color: voiceState.isListening ? AppColors.accent : AppColors.textMuted,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    voiceState.lastRecognizedResistance != null
+                        ? 'Set to ${voiceState.lastRecognizedResistance}'
+                        : voiceState.isListening
+                            ? 'Say "Echelon [1-32]"'
+                            : 'Voice control enabled',
+                    style: AppTypography.labelMedium.copyWith(
+                      color: voiceState.isListening ? AppColors.accent : AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
