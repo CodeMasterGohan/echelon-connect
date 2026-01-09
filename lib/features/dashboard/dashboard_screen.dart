@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
 import 'package:echelon_connect/core/services/voice_control_service.dart';
+import 'package:echelon_connect/core/providers/history_repository.dart';
+import 'package:echelon_connect/features/history/history_screen.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
 
@@ -78,6 +80,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         actions: [
+          // History button
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.white70),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+              );
+            },
+            tooltip: 'Ride History',
+          ),
           // Voice control toggle (only show during workout)
           if (bleState.isWorkoutActive)
             _buildVoiceControlButton(ref),
@@ -234,8 +246,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ref.read(bleManagerProvider.notifier).endWorkout();
+              onPressed: () async {
+                // End workout and get session summary
+                final session = ref.read(bleManagerProvider.notifier).endWorkoutWithSummary();
+                
+                if (session != null) {
+                  // Save to history
+                  await ref.read(historyRepositoryProvider).saveSession(session);
+                  // Invalidate sessions list to refresh
+                  ref.invalidate(workoutSessionsProvider);
+                  
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text('Workout saved! ${session.formattedDuration} • ${session.calories.toStringAsFixed(0)} cal'),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(seconds: 3),
+                        action: SnackBarAction(
+                          label: 'VIEW',
+                          textColor: Colors.white,
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  // Workout was too short to save
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Workout too short to save (minimum 1 minute)'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
               },
               icon: const Icon(Icons.stop),
               label: const Text('END WORKOUT'),
@@ -485,6 +542,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textMuted,
                   side: BorderSide(color: AppColors.surfaceBorder),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // View history button
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                  );
+                },
+                icon: const Icon(Icons.history),
+                label: const Text('VIEW RIDE HISTORY'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.accent,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),

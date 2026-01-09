@@ -10,12 +10,18 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:echelon_connect/features/dashboard/dashboard_screen.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
+import 'package:echelon_connect/core/models/workout_session.dart';
+import 'package:echelon_connect/core/providers/history_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Hive for local storage
   await Hive.initFlutter();
+
+  // Register Hive adapters and open boxes
+  Hive.registerAdapter(WorkoutSessionAdapter());
+  await Hive.openBox<WorkoutSession>(HistoryRepository.boxName);
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

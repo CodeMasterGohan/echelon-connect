@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:echelon_connect/core/models/workout_session.dart';
 import 'echelon_protocol.dart';
 
 /// Connection state enum
@@ -92,6 +93,15 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
   int _currentResistance = 0;
   DateTime _lastMetricsTime = DateTime.now();
   double _totalCalories = 0;
+
+  // Workout tracking for session summary
+  DateTime? _workoutStartTime;
+  int _cadenceReadings = 0;
+  int _totalCadence = 0;
+  int _resistanceReadings = 0;
+  int _totalResistance = 0;
+  int _powerReadings = 0;
+  int _totalPower = 0;
 
   /// Start scanning for Echelon devices
   Future<void> startScan() async {
@@ -223,6 +233,9 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
       });
 
       state = state.copyWith(connectionState: EchelonConnectionState.connected);
+      
+      // Track workout start time
+      _workoutStartTime = DateTime.now();
     } catch (e) {
       await disconnect();
       state = state.copyWith(
@@ -309,6 +322,20 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
         calories: _totalCalories,
       ),
     );
+
+    // Track running totals for session averages
+    if (newCadence > 0) {
+      _cadenceReadings++;
+      _totalCadence += newCadence;
+    }
+    if (newResistance > 0) {
+      _resistanceReadings++;
+      _totalResistance += newResistance;
+    }
+    if (newPower > 0) {
+      _powerReadings++;
+      _totalPower += newPower;
+    }
   }
 
   /// Set resistance level
@@ -370,19 +397,77 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
   /// End the current workout without disconnecting
   /// Resets metrics and returns to idle state while keeping BLE connection
   void endWorkout() {
-    _totalCalories = 0;
-    _lastMetricsTime = DateTime.now();
+    _resetWorkoutTracking();
     state = state.copyWith(
       currentMetrics: const WorkoutMetrics(),
       connectionState: EchelonConnectionState.idle,
     );
   }
 
+  /// End workout and return session summary for persistence
+  /// Returns null if workout was too short (< 60 seconds)
+  WorkoutSession? endWorkoutWithSummary() {
+    final metrics = state.currentMetrics;
+    
+    // Skip saving very short workouts
+    if (metrics.elapsedSeconds < 60) {
+      endWorkout();
+      return null;
+    }
+
+    final now = DateTime.now();
+    final startTime = _workoutStartTime ?? 
+        now.subtract(Duration(seconds: metrics.elapsedSeconds));
+
+    // Calculate averages from running totals
+    final avgCadence = _cadenceReadings > 0 
+        ? (_totalCadence / _cadenceReadings).round() 
+        : metrics.cadence;
+    final avgResistance = _resistanceReadings > 0 
+        ? (_totalResistance / _resistanceReadings).round() 
+        : metrics.resistance;
+    final avgPower = _powerReadings > 0 
+        ? (_totalPower / _powerReadings).round() 
+        : metrics.power;
+
+    // Calculate total output in kJ (watts * seconds / 1000)
+    final totalOutputKj = (avgPower * metrics.elapsedSeconds) / 1000.0;
+
+    final session = WorkoutSession(
+      id: now.millisecondsSinceEpoch.toString(),
+      startTime: startTime,
+      endTime: now,
+      durationSeconds: metrics.elapsedSeconds,
+      distanceKm: metrics.distance,
+      averageCadence: avgCadence,
+      averageResistance: avgResistance,
+      averagePower: avgPower,
+      totalOutputKj: totalOutputKj,
+      calories: metrics.calories,
+    );
+
+    endWorkout();
+    return session;
+  }
+
+  /// Reset workout tracking variables
+  void _resetWorkoutTracking() {
+    _totalCalories = 0;
+    _lastMetricsTime = DateTime.now();
+    _workoutStartTime = null;
+    _cadenceReadings = 0;
+    _totalCadence = 0;
+    _resistanceReadings = 0;
+    _totalResistance = 0;
+    _powerReadings = 0;
+    _totalPower = 0;
+  }
+
   /// Start a new workout (from idle state)
   void startWorkout() {
     if (state.connectionState == EchelonConnectionState.idle) {
-      _totalCalories = 0;
-      _lastMetricsTime = DateTime.now();
+      _resetWorkoutTracking();
+      _workoutStartTime = DateTime.now();
       state = state.copyWith(
         currentMetrics: const WorkoutMetrics(),
         connectionState: EchelonConnectionState.connected,
