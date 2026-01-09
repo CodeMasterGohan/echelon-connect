@@ -1,4 +1,4 @@
-/// Workouts list screen - shows saved workouts
+/// Workouts list screen - shows pre-defined workouts
 library;
 
 import 'package:flutter/material.dart';
@@ -7,26 +7,14 @@ import 'package:echelon_connect/core/models/workout.dart';
 import 'package:echelon_connect/core/services/workout_storage.dart';
 import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
-import 'package:echelon_connect/features/workouts/workout_editor_screen.dart';
 import 'package:echelon_connect/features/workouts/active_workout_screen.dart';
 
-class WorkoutsListScreen extends ConsumerStatefulWidget {
+class WorkoutsListScreen extends ConsumerWidget {
   const WorkoutsListScreen({super.key});
 
   @override
-  ConsumerState<WorkoutsListScreen> createState() => _WorkoutsListScreenState();
-}
-
-class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Sample workouts are now created automatically in WorkoutStorageNotifier._init()
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final workouts = ref.watch(workoutStorageProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workouts = ref.watch(workoutsProvider);
     final bleState = ref.watch(bleManagerProvider);
     final isConnected = bleState.isConnected;
 
@@ -35,7 +23,7 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: Text(
-          'MY WORKOUTS',
+          'WORKOUTS',
           style: AppTypography.titleMedium.copyWith(letterSpacing: 2),
         ),
         leading: IconButton(
@@ -43,51 +31,18 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: workouts.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: workouts.length,
-              itemBuilder: (context, index) {
-                final workout = workouts[index];
-                return _buildWorkoutCard(workout, isConnected);
-              },
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToEditor(null),
-        backgroundColor: AppColors.accent,
-        icon: const Icon(Icons.add),
-        label: const Text('NEW WORKOUT'),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: workouts.length,
+        itemBuilder: (context, index) {
+          final workout = workouts[index];
+          return _buildWorkoutCard(context, ref, workout, isConnected);
+        },
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.fitness_center,
-            size: 64,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Workouts Yet',
-            style: AppTypography.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Create your first custom workout',
-            style: AppTypography.bodyMedium,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkoutCard(Workout workout, bool isConnected) {
+  Widget _buildWorkoutCard(BuildContext context, WidgetRef ref, Workout workout, bool isConnected) {
     return Card(
       color: AppColors.surface,
       margin: const EdgeInsets.only(bottom: 12),
@@ -96,30 +51,16 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
         side: BorderSide(color: AppColors.surfaceBorder),
       ),
       child: InkWell(
-        onTap: () => _showWorkoutOptions(workout, isConnected),
+        onTap: () => _showWorkoutOptions(context, ref, workout, isConnected),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      workout.name,
-                      style: AppTypography.titleMedium,
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) => _handleMenuAction(value, workout),
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
-                    icon: const Icon(Icons.more_vert, color: AppColors.textMuted),
-                  ),
-                ],
+              Text(
+                workout.name,
+                style: AppTypography.titleMedium,
               ),
               const SizedBox(height: 8),
               Row(
@@ -130,12 +71,12 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Step preview
+              // Step preview - show first 6 resistance levels
               SizedBox(
                 height: 24,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: workout.steps.length.clamp(0, 5),
+                  itemCount: workout.steps.length.clamp(0, 6),
                   separatorBuilder: (_, __) => const SizedBox(width: 4),
                   itemBuilder: (context, index) {
                     final step = workout.steps[index];
@@ -171,14 +112,14 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
     );
   }
 
-  void _showWorkoutOptions(Workout workout, bool isConnected) {
+  void _showWorkoutOptions(BuildContext context, WidgetRef ref, Workout workout, bool isConnected) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => SafeArea(
+      builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -200,25 +141,13 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
               ElevatedButton.icon(
                 onPressed: isConnected
                     ? () {
-                        Navigator.pop(context); // Close bottom sheet
-                        _startWorkout(workout);
+                        Navigator.pop(ctx); // Close bottom sheet
+                        _startWorkout(context, workout);
                       }
                     : null,
                 icon: const Icon(Icons.play_arrow),
                 label: Text(isConnected ? 'START WORKOUT' : 'CONNECT BIKE TO START'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _navigateToEditor(workout);
-                },
-                icon: const Icon(Icons.edit),
-                label: const Text('EDIT WORKOUT'),
-                style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -229,53 +158,7 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
     );
   }
 
-  void _handleMenuAction(String action, Workout workout) {
-    switch (action) {
-      case 'edit':
-        _navigateToEditor(workout);
-        break;
-      case 'delete':
-        _confirmDelete(workout);
-        break;
-    }
-  }
-
-  void _confirmDelete(Workout workout) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Delete Workout?'),
-        content: Text('Are you sure you want to delete "${workout.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(workoutStorageProvider.notifier).deleteWorkout(workout.id);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('DELETE'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToEditor(Workout? workout) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkoutEditorScreen(workout: workout),
-      ),
-    );
-  }
-
-  void _startWorkout(Workout workout) {
-    ref.read(workoutStorageProvider.notifier).markAsUsed(workout.id);
+  void _startWorkout(BuildContext context, Workout workout) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

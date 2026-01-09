@@ -282,7 +282,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             child: Column(
               children: [
                 // Current step card
-                _buildCurrentStepCard(),
+                _buildCurrentStepCard(metrics.cadence),
                 const SizedBox(height: 16),
 
                 // Progress indicator
@@ -315,9 +315,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
-  Widget _buildCurrentStepCard() {
+  Widget _buildCurrentStepCard(int currentCadence) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.accent.withOpacity(0.3), AppColors.secondary.withOpacity(0.3)],
@@ -334,14 +334,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             'STEP ${_currentStepIndex + 1} OF ${widget.workout.steps.length}',
             style: AppTypography.labelMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
 
           // Step name
           Text(
             _currentStep.name ?? 'Step ${_currentStepIndex + 1}',
             style: AppTypography.headlineLarge,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Time remaining
           Row(
@@ -349,33 +349,72 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             children: [
               Icon(
                 _isPaused ? Icons.pause_circle : Icons.timer,
-                size: 32,
+                size: 28,
                 color: _isPaused ? AppColors.warning : AppColors.textPrimary,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Text(
                 _formatDuration(_stepRemainingSeconds),
                 style: AppTypography.displayLarge.copyWith(
-                  fontSize: 56,
+                  fontSize: 48,
                   fontWeight: FontWeight.bold,
                   color: _stepRemainingSeconds <= 10 ? AppColors.warning : AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // Target resistance
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'TARGET: R${_currentStep.resistance}',
-              style: AppTypography.titleMedium.copyWith(color: AppColors.secondary),
-            ),
+          // Target resistance and cadence row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Resistance target
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  'R${_currentStep.resistance}',
+                  style: AppTypography.titleMedium.copyWith(color: AppColors.secondary),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Cadence: Current / Target
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$currentCadence',
+                      style: AppTypography.titleMedium.copyWith(color: AppColors.accent),
+                    ),
+                    Text(
+                      ' / ',
+                      style: AppTypography.titleMedium.copyWith(color: AppColors.textMuted),
+                    ),
+                    Text(
+                      _currentStep.formattedCadence,
+                      style: AppTypography.titleMedium.copyWith(
+                        color: _currentStep.targetCadence == null ? AppColors.warning : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'RPM',
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
