@@ -539,7 +539,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildIdleView(BuildContext context, WidgetRef ref, BleManagerState bleState) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -571,11 +571,6 @@ class DashboardScreen extends ConsumerWidget {
               style: AppTypography.headlineLarge,
             ),
             const SizedBox(height: 12),
-            Text(
-              'Connected to ${bleState.connectedDevice?.name ?? "Echelon"}',
-              style: AppTypography.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
             Text(
               'Connected to ${bleState.connectedDevice?.name ?? "Echelon"}',
               style: AppTypography.bodyLarge,
