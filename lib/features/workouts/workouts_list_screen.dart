@@ -9,6 +9,7 @@ import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/workouts/workout_editor_screen.dart';
 import 'package:echelon_connect/features/workouts/active_workout_screen.dart';
+import 'package:echelon_connect/features/history/workout_history_screen.dart';
 
 class WorkoutsListScreen extends ConsumerStatefulWidget {
   const WorkoutsListScreen({super.key});
@@ -42,6 +43,20 @@ class _WorkoutsListScreenState extends ConsumerState<WorkoutsListScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WorkoutHistoryScreen(),
+                ),
+              );
+            },
+            tooltip: 'Workout History',
+          ),
+        ],
       ),
       body: workouts.isEmpty
           ? _buildEmptyState()
