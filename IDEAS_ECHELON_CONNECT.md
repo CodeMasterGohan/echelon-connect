@@ -74,6 +74,44 @@
 *   Enhance `DashboardScreen` state to track "focused metric".
 *   Use Flutter animations for the background gradient based on Heart Rate or Power zone.
 
+### Idea 6: Bluetooth Heart Rate Monitor Integration
+**User problem**: Cardio effort is just as important as power output for many users, but the bike doesn't measure it. Users currently have to look at a separate watch or phone to see their HR.
+**Proposed solution**:
+*   **Dual BLE Connection**: Allow connecting to a heart rate monitor (Polar, Garmin, etc.) simultaneously with the bike.
+*   **Unified Dashboard**: Display HR alongside Power and Cadence.
+*   **Calorie Accuracy**: Use real HR data for far more accurate calorie burn estimation than the current power-based formula.
+**Key screens / UI changes**:
+*   **Scan Screen**: Split list into "Bikes" and "Heart Rate Monitors".
+*   **Dashboard**: Add dedicated Heart Rate tile (Red color theme).
+**Technical notes**:
+*   Enhance `BleManager` to manage multiple peripheral connections.
+*   Parse standard BLE Heart Rate Profile (0x180D).
+
+### Idea 7: Data Export & Strava Integration
+**User problem**: "If it's not on Strava, it didn't happen." Users want their hard work to be visible on their main fitness platform.
+**Proposed solution**:
+*   **Standard Files**: Export completed rides as `.FIT` or `.TCX` files which can be uploaded anywhere.
+*   **Direct Integration**: "Upload to Strava" button in ride history (requires API key/auth).
+**Key screens / UI changes**:
+*   **History Detail**: Add "Share/Export" button in the app bar.
+*   **Export Dialog**: Options for "Save to Files", "Share", "Upload to Strava".
+**Technical notes**:
+*   Use a library to generate `.fit` files.
+*   Use `url_launcher` or a sharing plugin to handle file handoff.
+
+### Idea 8: "Ghost Rider" Pacing
+**User problem**: It is difficult to know if you are performing better than last time when riding a specific duration or distance.
+**Proposed solution**:
+*   **Ghost Overlay**: Select a past ride to compete against.
+*   **Live Comparison**: Show a "+/-" time gap or power gap in real-time.
+*   **Visual Pacer**: A small "ghost" icon on a progress bar indicating the previous effort's position.
+**Key screens / UI changes**:
+*   **Workout Setup**: Option to "Compete against previous" when starting a ride.
+*   **Dashboard**: A small secondary bar or "Gap" metric tile (e.g., "-15s" in green means you are ahead).
+**Technical notes**:
+*   Requires `Ride History` to be implemented first.
+*   Replay the saved sample data in sync with the current timer.
+
 ---
 
 ## Additional Metrics & Insights
@@ -139,17 +177,18 @@
 *   **Impact**: High. Users finally get "credit" for their rides.
 *   **Complexity**: Medium.
 
-### Next (Phase 2: Structured Training)
+### Next (Phase 2: Structured Training & Connectivity)
 *   **Workout Creator**: UI to build custom interval sets.
 *   **Power Zones**: Color-coded UI based on the user's FTP.
-*   **FTP Test Mode**: Pre-built workout to help users find their number.
+*   **Heart Rate Integration**: Connect external BLE monitors.
+*   **Data Export**: Enable .FIT file export for Strava.
 *   **Impact**: High. Transforms app from "display" to "trainer."
-*   **Complexity**: Medium/High.
+*   **Complexity**: High.
 
 ### Later (Phase 3: Polish & Eco-system)
 *   **Graphing**: Charts for post-ride analysis (using `fl_chart`).
+*   **Ghost Rider**: Compare against previous bests.
 *   **Shareable Stats**: Image generation.
-*   **Cloud Backup**: Optional export to JSON/CSV (or Strava upload via API).
 *   **Impact**: Medium. "Nice to have" features for power users.
 *   **Complexity**: High.
 
