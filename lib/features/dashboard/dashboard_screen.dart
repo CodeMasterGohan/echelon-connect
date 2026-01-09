@@ -11,7 +11,7 @@ import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
 import 'package:echelon_connect/features/dashboard/widgets/pip_overlay.dart';
 import 'package:echelon_connect/core/bluetooth/ftms_service.dart';
-import 'package:echelon_connect/features/workouts/workouts_list_screen.dart';
+import 'package:echelon_connect/features/workouts/workout_styles_screen.dart';
 
 
 class DashboardScreen extends ConsumerWidget {
@@ -65,7 +65,7 @@ class DashboardScreen extends ConsumerWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const WorkoutsListScreen()),
+                    MaterialPageRoute(builder: (context) => const WorkoutStylesScreen()),
                   );
                 },
                 icon: const Icon(
@@ -642,7 +642,7 @@ class DashboardScreen extends ConsumerWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const WorkoutsListScreen()),
+                    MaterialPageRoute(builder: (context) => const WorkoutStylesScreen()),
                   );
                 },
                 icon: const Icon(Icons.fitness_center),

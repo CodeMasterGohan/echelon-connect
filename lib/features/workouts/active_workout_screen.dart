@@ -34,7 +34,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
-    _startWorkout();
+    // Defer provider modification to after the build phase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startWorkout();
+    });
   }
 
   @override
@@ -56,6 +59,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   void _tick() {
     if (_isPaused) return;
+    if (!mounted) return;
 
     setState(() {
       _stepElapsedSeconds++;
