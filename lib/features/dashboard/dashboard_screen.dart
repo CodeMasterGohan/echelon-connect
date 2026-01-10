@@ -10,7 +10,7 @@ import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
 import 'package:echelon_connect/features/dashboard/widgets/pip_overlay.dart';
-import 'package:echelon_connect/core/bluetooth/ftms_service.dart';
+import 'package:echelon_connect/core/providers/theme_provider.dart';
 import 'package:echelon_connect/features/workouts/workout_styles_screen.dart';
 
 
@@ -30,14 +30,15 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bleState = ref.watch(bleManagerProvider);
-    final isAdvertising = ref.watch(ftmsServiceProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final metrics = bleState.currentMetrics;
+    final isDark = themeMode == ThemeMode.dark;
 
     // Wrap entire scaffold in PipWidget - in PiP mode, only show the overlay (no AppBar)
     return PipWidget(
       pipBuilder: (context) => const PipOverlay(),
       builder: (context) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           backgroundColor: AppColors.background,
           title: Row(
@@ -87,14 +88,14 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 tooltip: 'Enter Picture-in-Picture',
               ),
-            // FTMS Bridge Button
+            // Theme Toggle Button
             IconButton(
-              onPressed: () => ref.read(ftmsServiceProvider.notifier).toggle(),
+              onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
               icon: Icon(
-                Icons.bluetooth_audio,
-                color: isAdvertising ? AppColors.success : AppColors.textMuted,
-              ), // Using bluetooth_audio as "Broadcast" icon
-              tooltip: isAdvertising ? 'Stop Broadcasting' : 'Broadcast to Zwift/MyWhoosh',
+                isDark ? Icons.light_mode : Icons.dark_mode,
+                color: isDark ? AppColors.accent : AppColorsLight.accent,
+              ),
+              tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
             ),
             // Connection status indicator
             Container(

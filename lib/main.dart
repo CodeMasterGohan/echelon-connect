@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:echelon_connect/features/dashboard/dashboard_screen.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
+import 'package:echelon_connect/core/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,14 +43,14 @@ void main() async {
   );
 }
 
-class EchelonConnectApp extends StatefulWidget {
+class EchelonConnectApp extends ConsumerStatefulWidget {
   const EchelonConnectApp({super.key});
 
   @override
-  State<EchelonConnectApp> createState() => _EchelonConnectAppState();
+  ConsumerState<EchelonConnectApp> createState() => _EchelonConnectAppState();
 }
 
-class _EchelonConnectAppState extends State<EchelonConnectApp> with WidgetsBindingObserver {
+class _EchelonConnectAppState extends ConsumerState<EchelonConnectApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -79,11 +80,16 @@ class _EchelonConnectAppState extends State<EchelonConnectApp> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+    
     return MaterialApp(
       title: 'Echelon Connect',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       home: const DashboardScreen(),
     );
   }
 }
+

@@ -15,18 +15,44 @@ Say goodbye to monthly fees and hello to **complete control**.
 
 ## ✨ Features
 
+### Core Metrics & Controls
 *   **⚡ Real-Time Metrics**: Instant feedback on **Power (Watts)**, **Cadence (RPM)**, **Resistance**, and **Speed**.
-*   **🎛️ Precision Control**: Adjust resistance levels manually or use **Smart Presets** (10, 20, 30) for interval training.
-*   **🎨 Premium UI**: Designed with a "Dark Mode First" philosophy using vibrant accents and smooth animations.
-*   **🔌 Instant Connection**: Auto-scan and connect to nearby Echelon devices in seconds.
-*   **📱 Tablet Optimized**: Responsive grid layout that adapts perfectly to both phones and tablets.
+*   **🎛️ Precision Control**: Adjust resistance levels manually with +/- buttons or use **Smart Presets** (10, 20, 30) for quick interval training adjustments.
+*   **📊 Peloton Resistance %**: Resistance values are displayed as Peloton-compatible percentages for easy cross-platform workout following.
+
+### Structured Workouts
+*   **🏋️ Pre-Built Workout Programs**: Choose from 5 professionally designed workout styles:
+    - ⭐ **Interval Training** - High-intensity intervals with recovery periods
+    - ⛰️ **Hill Climb** - Progressive resistance increases simulating hill climbs  
+    - 🔥 **Tabata Sprints** - Classic 20/10 HIIT intervals for maximum calorie burn
+    - 🌊 **Rolling Hills** - Simulated terrain with peaks and valleys
+    - 💪 **Power Pyramid** - Build up to peak resistance then descend
+*   **📈 Difficulty Variations**: Each workout style includes **Easy**, **Medium**, and **Hard** difficulty levels to match your fitness.
+*   **🎯 Target Cadence**: Each workout step includes target cadence guidance to keep you in the optimal training zone.
+*   **⏱️ Auto-Resistance**: Workouts automatically adjust your bike's resistance as you progress through each step.
+*   **⏩ Workout Controls**: Pause, resume, skip steps, or end workouts early with intuitive controls.
+
+### Android Picture-in-Picture (PiP)
+*   **📱 Compact PiP Mode**: Continue monitoring your workout while using other apps with an always-on-top overlay showing:
+    - Cadence (RPM)
+    - Speed (MPH)
+    - Peloton Resistance %
+
+### Theme Support
+*   **🌙 Dark Mode**: Premium dark theme as the default for comfortable low-light workouts.
+*   **☀️ Light Mode**: Toggle to light theme for bright environments via the theme switch in the app header.
+
+### Design & UX
+*   **🎨 Premium UI**: Designed with a "Dark Mode First" philosophy using vibrant accents, glassmorphism, and smooth animations.
+*   **📱 Tablet Optimized**: Responsive grid layout that adapts perfectly to both phones and tablets (optimized for Kindle Fire 10" landscape).
 *   **🔒 Local & Private**: Your workout data stays on your device. No cloud accounts, no tracking.
+*   **🔌 Instant Connection**: Auto-scan and connect to nearby Echelon devices in seconds.
 
 ## 📱 Screenshots
 
-| Dashboard | Connection |
-|:---:|:---:|
-| *(Add Metric View Screenshot)* | *(Add Scan View Screenshot)* |
+| Dashboard | Workout Styles | Active Workout |
+|:---:|:---:|:---:|
+| *(Metric View)* | *(Style Selection)* | *(In-Progress Workout)* |
 
 ## 🛠️ Technology Stack
 
@@ -36,6 +62,8 @@ Built with the latest and greatest in the Flutter ecosystem:
 *   **Language**: [Dart](https://dart.dev/)
 *   **State Management**: [Riverpod](https://riverpod.dev/) for robust reactive state.
 *   **Bluetooth**: [Flutter Blue Plus](https://pub.dev/packages/flutter_blue_plus) for reliable BLE communication.
+*   **Local Storage**: [Hive](https://pub.dev/packages/hive) for fast, lightweight local persistence.
+*   **Picture-in-Picture**: [Android PiP](https://pub.dev/packages/android_pip) for multitasking overlay.
 *   **Typography**: [Google Fonts](https://fonts.google.com/) (Inter).
 
 ## 🏁 Getting Started
@@ -65,13 +93,24 @@ Built with the latest and greatest in the Flutter ecosystem:
     flutter run
     ```
 
+4.  **Build APK** (optional)
+    ```bash
+    flutter build apk --debug
+    ```
+
 ## 🗺️ Roadmap
 
 - [x] Basic BLE Protocol Implementation
 - [x] Real-time Metrics Dashboard
-- [x] Resistance Control ( Buttons & Presets )
+- [x] Resistance Control (Buttons & Presets)
+- [x] Peloton Resistance % Display
+- [x] Structured Workouts with Auto-Resistance
+- [x] Workout Difficulty Variations (Easy/Medium/Hard)
+- [x] Target Cadence Guidance
+- [x] Android Picture-in-Picture Mode
+- [x] Dark/Light Theme Toggle
 - [ ] Workout Recording & History
-- [ ] Third-Party Integration (Strava, Zwift)
+- [ ] Third-Party Integration (Strava Export)
 - [ ] Graph Visualization
 
 ## 🤝 Contributing
