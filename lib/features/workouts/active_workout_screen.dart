@@ -21,11 +21,17 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
+  /// Resistance anticipation time in seconds.
+  /// The bike takes ~5 seconds to receive and implement resistance changes,
+  /// so we send the command early to sync with workout timing.
+  static const int _resistanceAnticipationSeconds = 5;
+
   int _currentStepIndex = 0;
   int _stepElapsedSeconds = 0;
   int _totalElapsedSeconds = 0;
   Timer? _timer;
   bool _isPaused = false;
+  bool _nextStepResistanceSent = false; // Track if we've sent the next step's resistance early
 
   WorkoutStep get _currentStep => widget.workout.steps[_currentStepIndex];
   int get _stepRemainingSeconds => _currentStep.durationSeconds - _stepElapsedSeconds;
@@ -65,6 +71,18 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       _stepElapsedSeconds++;
       _totalElapsedSeconds++;
 
+      // Anticipate resistance change: send next step's resistance early to account for bike delay
+      // Only do this if there's a next step and we haven't already sent it
+      if (!_isLastStep && !_nextStepResistanceSent && 
+          _stepRemainingSeconds <= _resistanceAnticipationSeconds) {
+        final nextStep = widget.workout.steps[_currentStepIndex + 1];
+        // Only send early if the resistance is different
+        if (nextStep.resistance != _currentStep.resistance) {
+          _setResistance(nextStep.resistance);
+        }
+        _nextStepResistanceSent = true;
+      }
+
       // Check if current step is complete
       if (_stepElapsedSeconds >= _currentStep.durationSeconds) {
         if (_isLastStep) {
@@ -76,12 +94,18 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     });
   }
 
-  void _advanceToNextStep() {
+  void _advanceToNextStep({bool skipAnticipation = false}) {
+    final previousStepIndex = _currentStepIndex;
     setState(() {
       _currentStepIndex++;
       _stepElapsedSeconds = 0;
+      _nextStepResistanceSent = false; // Reset for next step transition
     });
-    _setResistance(_currentStep.resistance);
+    // If anticipation wasn't triggered (short step or skipping), send resistance now
+    if (skipAnticipation || widget.workout.steps[previousStepIndex].durationSeconds < _resistanceAnticipationSeconds) {
+      _setResistance(_currentStep.resistance);
+    }
+    // Note: In normal flow, resistance was already sent early via anticipation
   }
 
   void _setResistance(int resistance) {
@@ -98,7 +122,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     if (!_isLastStep) {
       // Add the remaining time of current step to total elapsed
       _totalElapsedSeconds += _stepRemainingSeconds;
-      _advanceToNextStep();
+      // When skipping, always send resistance immediately (bypass anticipation)
+      _advanceToNextStep(skipAnticipation: true);
     }
   }
 
