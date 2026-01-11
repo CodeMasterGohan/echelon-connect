@@ -22,9 +22,9 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   /// Resistance anticipation time in seconds.
-  /// The bike takes ~5 seconds to receive and implement resistance changes,
+  /// The bike takes a few seconds to receive and implement resistance changes,
   /// so we send the command early to sync with workout timing.
-  static const int _resistanceAnticipationSeconds = 5;
+  static const int _resistanceAnticipationSeconds = 3;
 
   int _currentStepIndex = 0;
   int _stepElapsedSeconds = 0;

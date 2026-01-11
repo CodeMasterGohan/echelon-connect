@@ -98,6 +98,30 @@ class AppColorsLight {
   static const Color zoneAnaerobic = Color(0xFF9C27B0);
 }
 
+/// Theme-aware color helper - use this in widgets to get the current theme colors
+extension ThemeColors on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  
+  // Background colors
+  Color get backgroundColor => isDark ? AppColors.background : AppColorsLight.background;
+  Color get surfaceColor => isDark ? AppColors.surface : AppColorsLight.surface;
+  Color get surfaceLightColor => isDark ? AppColors.surfaceLight : AppColorsLight.surfaceLight;
+  Color get surfaceBorderColor => isDark ? AppColors.surfaceBorder : AppColorsLight.surfaceBorder;
+  
+  // Accent colors
+  Color get accentColor => isDark ? AppColors.accent : AppColorsLight.accent;
+  Color get accentGlowColor => isDark ? AppColors.accentGlow : AppColorsLight.accentGlow;
+  Color get secondaryColor => isDark ? AppColors.secondary : AppColorsLight.secondary;
+  Color get successColor => isDark ? AppColors.success : AppColorsLight.success;
+  Color get warningColor => isDark ? AppColors.warning : AppColorsLight.warning;
+  Color get errorColor => isDark ? AppColors.error : AppColorsLight.error;
+  
+  // Text colors
+  Color get textPrimaryColor => isDark ? AppColors.textPrimary : AppColorsLight.textPrimary;
+  Color get textSecondaryColor => isDark ? AppColors.textSecondary : AppColorsLight.textSecondary;
+  Color get textMutedColor => isDark ? AppColors.textMuted : AppColorsLight.textMuted;
+}
+
 /// App typography
 class AppTypography {
   static TextStyle get displayLarge => GoogleFonts.inter(

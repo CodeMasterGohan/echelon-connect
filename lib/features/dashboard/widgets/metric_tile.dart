@@ -31,12 +31,12 @@ class MetricTile extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isLarge ? 20 : 16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorder, width: 1),
+        border: Border.all(color: context.surfaceBorderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: (valueColor ?? AppColors.accent).withOpacity(0.1),
+            color: (valueColor ?? context.accentColor).withAlpha(25),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -52,13 +52,13 @@ class MetricTile extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: valueColor ?? AppColors.accent,
+                color: valueColor ?? context.accentColor,
               ),
               const SizedBox(width: 8),
               Text(
                 label.toUpperCase(),
                 style: AppTypography.labelLarge.copyWith(
-                  color: AppColors.textMuted,
+                  color: context.textMutedColor,
                 ),
               ),
             ],
@@ -74,17 +74,19 @@ class MetricTile extends StatelessWidget {
                 value,
                 style: isLarge
                     ? AppTypography.displayLarge.copyWith(
-                        color: valueColor ?? AppColors.textPrimary,
+                        color: valueColor ?? context.textPrimaryColor,
                       )
                     : AppTypography.metricValue.copyWith(
-                        color: valueColor ?? AppColors.textPrimary,
+                        color: valueColor ?? context.textPrimaryColor,
                         fontSize: 36,
                       ),
               ),
               const SizedBox(width: 4),
               Text(
                 unit,
-                style: AppTypography.metricUnit,
+                style: AppTypography.metricUnit.copyWith(
+                  color: context.textMutedColor,
+                ),
               ),
             ],
           ),
@@ -96,9 +98,9 @@ class MetricTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: progress!.clamp(0.0, 1.0),
-                backgroundColor: AppColors.surfaceLight,
+                backgroundColor: context.surfaceLightColor,
                 valueColor: AlwaysStoppedAnimation(
-                  progressColor ?? valueColor ?? AppColors.accent,
+                  progressColor ?? valueColor ?? context.accentColor,
                 ),
                 minHeight: 6,
               ),
@@ -130,9 +132,9 @@ class CompactMetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder, width: 1),
+        border: Border.all(color: context.surfaceBorderColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -140,7 +142,7 @@ class CompactMetricTile extends StatelessWidget {
           Icon(
             icon,
             size: 20,
-            color: color ?? AppColors.textMuted,
+            color: color ?? context.textMutedColor,
           ),
           const SizedBox(width: 10),
           Column(
@@ -151,11 +153,14 @@ class CompactMetricTile extends StatelessWidget {
                 value,
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: context.textPrimaryColor,
                 ),
               ),
               Text(
                 label,
-                style: AppTypography.labelMedium,
+                style: AppTypography.labelMedium.copyWith(
+                  color: context.textMutedColor,
+                ),
               ),
             ],
           ),

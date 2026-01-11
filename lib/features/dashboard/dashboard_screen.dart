@@ -32,13 +32,13 @@ class DashboardScreen extends ConsumerWidget {
       builder: (context) => Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.backgroundColor,
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.bolt,
-                color: isConnected ? AppColors.success : AppColors.textMuted,
+                color: isConnected ? context.successColor : context.textMutedColor,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -47,6 +47,7 @@ class DashboardScreen extends ConsumerWidget {
                 style: AppTypography.titleMedium.copyWith(
                   letterSpacing: 2,
                   fontWeight: FontWeight.w700,
+                  color: context.textPrimaryColor,
                 ),
               ),
             ],
@@ -61,9 +62,9 @@ class DashboardScreen extends ConsumerWidget {
                     MaterialPageRoute(builder: (context) => const WorkoutStylesScreen()),
                   );
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.fitness_center,
-                  color: AppColors.accent,
+                  color: context.accentColor,
                 ),
                 tooltip: 'Custom Workouts',
               ),
@@ -74,9 +75,9 @@ class DashboardScreen extends ConsumerWidget {
                   aspectRatio: [16, 9],
                   autoEnter: true,
                 ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.picture_in_picture,
-                  color: AppColors.accent,
+                  color: context.accentColor,
                 ),
                 tooltip: 'Enter Picture-in-Picture',
               ),
@@ -85,7 +86,7 @@ class DashboardScreen extends ConsumerWidget {
               onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
               icon: Icon(
                 isDark ? Icons.light_mode : Icons.dark_mode,
-                color: isDark ? AppColors.accent : AppColorsLight.accent,
+                color: context.accentColor,
               ),
               tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
             ),
@@ -95,11 +96,11 @@ class DashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isConnected
-                    ? AppColors.success.withOpacity(0.2)
-                    : AppColors.surfaceLight,
+                    ? context.successColor.withAlpha(51)
+                    : context.surfaceLightColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isConnected ? AppColors.success : AppColors.surfaceBorder,
+                  color: isConnected ? context.successColor : context.surfaceBorderColor,
                 ),
               ),
               child: Row(
@@ -110,14 +111,14 @@ class DashboardScreen extends ConsumerWidget {
                     height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isConnected ? AppColors.success : AppColors.textMuted,
+                      color: isConnected ? context.successColor : context.textMutedColor,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     isConnected ? 'Connected' : 'Disconnected',
                     style: AppTypography.labelMedium.copyWith(
-                      color: isConnected ? AppColors.success : AppColors.textMuted,
+                      color: isConnected ? context.successColor : context.textMutedColor,
                     ),
                   ),
                 ],
@@ -182,10 +183,10 @@ class ConnectedDashboardView extends ConsumerWidget {
                           childAspectRatio: 1.6,
                           physics: const NeverScrollableScrollPhysics(),
                           children: [
-                            _buildCompactMetric('Power', metrics.power.toString(), 'W', Icons.flash_on, powerColor),
-                            _buildCompactMetric('Cadence', metrics.cadence.toString(), 'RPM', Icons.speed, AppColors.accent),
-                            _buildCompactMetric('Speed', (metrics.speed * 0.621371).toStringAsFixed(1), 'MPH', Icons.directions_bike, AppColors.textPrimary),
-                            _buildCompactMetric('Resistance', '${metrics.resistance}/${EchelonProtocol.maxResistance} (${PowerCalculator.bikeResistanceToPeloton(metrics.resistance)}%)', '', Icons.fitness_center, AppColors.secondary),
+                            _buildCompactMetric(context, 'Power', metrics.power.toString(), 'W', Icons.flash_on, powerColor),
+                            _buildCompactMetric(context, 'Cadence', metrics.cadence.toString(), 'RPM', Icons.speed, context.accentColor),
+                            _buildCompactMetric(context, 'Speed', (metrics.speed * 0.621371).toStringAsFixed(1), 'MPH', Icons.directions_bike, context.textPrimaryColor),
+                            _buildCompactMetric(context, 'Resistance', '${metrics.resistance}/${EchelonProtocol.maxResistance} (${PowerCalculator.bikeResistanceToPeloton(metrics.resistance)}%)', '', Icons.fitness_center, context.secondaryColor),
                           ],
                         ),
                       ),
@@ -193,11 +194,11 @@ class ConnectedDashboardView extends ConsumerWidget {
                       // Secondary metrics row
                       Row(
                         children: [
-                          Expanded(child: _buildMiniMetric(Icons.timer_outlined, _formatDuration(metrics.elapsedSeconds))),
+                          Expanded(child: _buildMiniMetric(context, Icons.timer_outlined, _formatDuration(metrics.elapsedSeconds))),
                           const SizedBox(width: 8),
-                          Expanded(child: _buildMiniMetric(Icons.straighten, '${(metrics.distance * 0.621371).toStringAsFixed(2)} mi')),
+                          Expanded(child: _buildMiniMetric(context, Icons.straighten, '${(metrics.distance * 0.621371).toStringAsFixed(2)} mi')),
                           const SizedBox(width: 8),
-                          Expanded(child: _buildMiniMetric(Icons.local_fire_department, '${metrics.calories.toStringAsFixed(0)} cal', AppColors.warning)),
+                          Expanded(child: _buildMiniMetric(context, Icons.local_fire_department, '${metrics.calories.toStringAsFixed(0)} cal', context.warningColor)),
                         ],
                       ),
                     ],
@@ -209,7 +210,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                   flex: 2,
                   child: Column(
                     children: [
-                      Expanded(child: _buildCompactResistanceControls(ref, metrics.resistance)),
+                      Expanded(child: _buildCompactResistanceControls(context, ref, metrics.resistance)),
                       const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
@@ -218,8 +219,8 @@ class ConnectedDashboardView extends ConsumerWidget {
                           icon: const Icon(Icons.stop, size: 18),
                           label: const Text('END'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.error,
-                            side: const BorderSide(color: AppColors.error),
+                            foregroundColor: context.errorColor,
+                            side: BorderSide(color: context.errorColor),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
@@ -261,7 +262,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                     value: metrics.cadence.toString(),
                     unit: 'RPM',
                     icon: Icons.speed,
-                    valueColor: AppColors.accent,
+                    valueColor: context.accentColor,
                     progress: (metrics.cadence / 120).clamp(0.0, 1.0),
                   ),
                   MetricTile(
@@ -269,9 +270,9 @@ class ConnectedDashboardView extends ConsumerWidget {
                     value: '${metrics.resistance}/${EchelonProtocol.maxResistance}',
                     unit: '(${PowerCalculator.bikeResistanceToPeloton(metrics.resistance)}%)',
                     icon: Icons.fitness_center,
-                    valueColor: AppColors.secondary,
+                    valueColor: context.secondaryColor,
                     progress: metrics.resistance / EchelonProtocol.maxResistance,
-                    progressColor: AppColors.secondary,
+                    progressColor: context.secondaryColor,
                   ),
                   MetricTile(
                     label: 'Speed',
@@ -305,13 +306,13 @@ class ConnectedDashboardView extends ConsumerWidget {
                       label: 'Calories',
                       value: metrics.calories.toStringAsFixed(0),
                       icon: Icons.local_fire_department,
-                      color: AppColors.warning,
+                      color: context.warningColor,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              _buildResistanceControls(ref, metrics.resistance),
+              _buildResistanceControls(context, ref, metrics.resistance),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -320,8 +321,8 @@ class ConnectedDashboardView extends ConsumerWidget {
                   icon: const Icon(Icons.stop),
                   label: const Text('END WORKOUT'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+                    foregroundColor: context.errorColor,
+                    side: BorderSide(color: context.errorColor),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
@@ -334,13 +335,13 @@ class ConnectedDashboardView extends ConsumerWidget {
   }
 
   // Compact metric tile for landscape tablet layout
-  Widget _buildCompactMetric(String label, String value, String unit, IconData icon, Color color) {
+  Widget _buildCompactMetric(BuildContext context, String label, String value, String unit, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.surfaceBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +351,7 @@ class ConnectedDashboardView extends ConsumerWidget {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 6),
-              Text(label.toUpperCase(), style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted)),
+              Text(label.toUpperCase(), style: AppTypography.labelSmall.copyWith(color: context.textMutedColor)),
             ],
           ),
           const SizedBox(height: 4),
@@ -361,7 +362,7 @@ class ConnectedDashboardView extends ConsumerWidget {
               Text(value, style: AppTypography.displayMedium.copyWith(color: color, fontSize: 28)),
               if (unit.isNotEmpty) ...[
                 const SizedBox(width: 4),
-                Text(unit, style: AppTypography.labelMedium),
+                Text(unit, style: AppTypography.labelMedium.copyWith(color: context.textMutedColor)),
               ],
             ],
           ),
@@ -371,38 +372,38 @@ class ConnectedDashboardView extends ConsumerWidget {
   }
 
   // Mini metric for secondary stats in landscape
-  Widget _buildMiniMetric(IconData icon, String value, [Color? color]) {
+  Widget _buildMiniMetric(BuildContext context, IconData icon, String value, [Color? color]) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.surfaceBorderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: color ?? AppColors.textMuted),
+          Icon(icon, size: 16, color: color ?? context.textMutedColor),
           const SizedBox(width: 6),
-          Flexible(child: Text(value, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+          Flexible(child: Text(value, style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w600, color: context.textPrimaryColor), overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
   }
 
   // Compact resistance controls for landscape tablet
-  Widget _buildCompactResistanceControls(WidgetRef ref, int currentResistance) {
+  Widget _buildCompactResistanceControls(BuildContext context, WidgetRef ref, int currentResistance) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.surfaceBorderColor),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('RESISTANCE', style: AppTypography.labelMedium),
+          Text('RESISTANCE', style: AppTypography.labelMedium.copyWith(color: context.textMutedColor)),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -413,13 +414,13 @@ class ConnectedDashboardView extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.remove_circle_outline),
                 iconSize: 40,
-                color: AppColors.accent,
+                color: context.accentColor,
               ),
               const SizedBox(width: 16),
               Column(
                 children: [
-                  Text(currentResistance.toString(), style: AppTypography.displayMedium.copyWith(color: AppColors.secondary)),
-                  Text('of ${EchelonProtocol.maxResistance}', style: AppTypography.labelSmall),
+                  Text(currentResistance.toString(), style: AppTypography.displayMedium.copyWith(color: context.secondaryColor)),
+                  Text('of ${EchelonProtocol.maxResistance}', style: AppTypography.labelSmall.copyWith(color: context.textMutedColor)),
                 ],
               ),
               const SizedBox(width: 16),
@@ -429,7 +430,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.add_circle_outline),
                 iconSize: 40,
-                color: AppColors.accent,
+                color: context.accentColor,
               ),
             ],
           ),
@@ -437,9 +438,9 @@ class ConnectedDashboardView extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildSmallPresetButton(ref, 10),
-              _buildSmallPresetButton(ref, 20),
-              _buildSmallPresetButton(ref, 30),
+              _buildSmallPresetButton(context, ref, 10),
+              _buildSmallPresetButton(context, ref, 20),
+              _buildSmallPresetButton(context, ref, 30),
             ],
           ),
         ],
@@ -447,32 +448,32 @@ class ConnectedDashboardView extends ConsumerWidget {
     );
   }
 
-  Widget _buildSmallPresetButton(WidgetRef ref, int targetResistance) {
+  Widget _buildSmallPresetButton(BuildContext context, WidgetRef ref, int targetResistance) {
     return ElevatedButton(
       onPressed: () => ref.read(bleManagerProvider.notifier).setResistance(targetResistance),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.surfaceLight,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.surfaceLightColor,
+        foregroundColor: context.textPrimaryColor,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         minimumSize: const Size(50, 36),
       ),
-      child: Text(targetResistance.toString(), style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold)),
+      child: Text(targetResistance.toString(), style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold, color: context.textPrimaryColor)),
     );
   }
 
-  Widget _buildResistanceControls(WidgetRef ref, int currentResistance) {
+  Widget _buildResistanceControls(BuildContext context, WidgetRef ref, int currentResistance) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.surfaceBorderColor),
       ),
       child: Column(
         children: [
           Text(
             'RESISTANCE CONTROL',
-            style: AppTypography.labelLarge,
+            style: AppTypography.labelLarge.copyWith(color: context.textMutedColor),
           ),
           const SizedBox(height: 16),
           Row(
@@ -485,7 +486,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.remove_circle_outline),
                 iconSize: 48,
-                color: AppColors.accent,
+                color: context.accentColor,
               ),
               const SizedBox(width: 24),
               // Current level
@@ -494,12 +495,12 @@ class ConnectedDashboardView extends ConsumerWidget {
                   Text(
                     currentResistance.toString(),
                     style: AppTypography.displayMedium.copyWith(
-                      color: AppColors.secondary,
+                      color: context.secondaryColor,
                     ),
                   ),
                   Text(
                     'of ${EchelonProtocol.maxResistance}',
-                    style: AppTypography.bodyMedium,
+                    style: AppTypography.bodyMedium.copyWith(color: context.textSecondaryColor),
                   ),
                 ],
               ),
@@ -511,7 +512,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.add_circle_outline),
                 iconSize: 48,
-                color: AppColors.accent,
+                color: context.accentColor,
               ),
             ],
           ),
@@ -520,9 +521,9 @@ class ConnectedDashboardView extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildPresetButton(ref, 10),
-              _buildPresetButton(ref, 20),
-              _buildPresetButton(ref, 30),
+              _buildPresetButton(context, ref, 10),
+              _buildPresetButton(context, ref, 20),
+              _buildPresetButton(context, ref, 30),
             ],
           ),
         ],
@@ -530,19 +531,19 @@ class ConnectedDashboardView extends ConsumerWidget {
     );
   }
 
-  Widget _buildPresetButton(WidgetRef ref, int targetResistance) {
+  Widget _buildPresetButton(BuildContext context, WidgetRef ref, int targetResistance) {
     return ElevatedButton(
       onPressed: () => ref.read(bleManagerProvider.notifier).setResistance(targetResistance),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.surfaceLight,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.surfaceLightColor,
+        foregroundColor: context.textPrimaryColor,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
       child: Text(
         targetResistance.toString(),
         style: AppTypography.titleMedium.copyWith(
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: context.textPrimaryColor,
         ),
       ),
     );
@@ -577,11 +578,11 @@ class IdleDashboardView extends ConsumerWidget {
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.surface,
-                border: Border.all(color: AppColors.success.withOpacity(0.5)),
+                color: context.surfaceColor,
+                border: Border.all(color: context.successColor.withAlpha(128)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.success.withOpacity(0.3),
+                    color: context.successColor.withAlpha(77),
                     blurRadius: 40,
                     spreadRadius: 10,
                   ),
@@ -590,18 +591,18 @@ class IdleDashboardView extends ConsumerWidget {
               child: Icon(
                 Icons.check_circle_outline,
                 size: 64,
-                color: AppColors.success,
+                color: context.successColor,
               ),
             ),
             const SizedBox(height: 32),
             Text(
               'Workout Complete!',
-              style: AppTypography.headlineLarge,
+              style: AppTypography.headlineLarge.copyWith(color: context.textPrimaryColor),
             ),
             const SizedBox(height: 12),
             Text(
               'Connected to ${bleState.connectedDevice?.name ?? "Echelon"}',
-              style: AppTypography.bodyLarge,
+              style: AppTypography.bodyLarge.copyWith(color: context.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
             
@@ -610,35 +611,38 @@ class IdleDashboardView extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceBorder),
+                  border: Border.all(color: context.surfaceBorderColor),
                 ),
                 child: Column(
                   children: [
                     Text(
                       'PREVIOUS WORKOUT',
-                      style: AppTypography.labelLarge,
+                      style: AppTypography.labelLarge.copyWith(color: context.textMutedColor),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildStatItem(
+                          context: context,
                           label: 'TIME',
                           value: _formatDuration(bleState.lastWorkoutMetrics!.elapsedSeconds),
                           icon: Icons.timer_outlined,
                         ),
                         _buildStatItem(
+                          context: context,
                           label: 'DIST',
                           value: '${(bleState.lastWorkoutMetrics!.distance * 0.621371).toStringAsFixed(2)} mi',
                           icon: Icons.straighten,
                         ),
                         _buildStatItem(
+                          context: context,
                           label: 'CALS',
                           value: bleState.lastWorkoutMetrics!.calories.toStringAsFixed(0),
                           icon: Icons.local_fire_department,
-                          color: AppColors.warning,
+                          color: context.warningColor,
                         ),
                       ],
                     ),
@@ -676,8 +680,8 @@ class IdleDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.fitness_center),
                 label: const Text('CUSTOM WORKOUTS'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  side: const BorderSide(color: AppColors.accent),
+                  foregroundColor: context.accentColor,
+                  side: BorderSide(color: context.accentColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -695,8 +699,8 @@ class IdleDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.bluetooth_disabled),
                 label: const Text('DISCONNECT'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textMuted,
-                  side: BorderSide(color: AppColors.surfaceBorder),
+                  foregroundColor: context.textMutedColor,
+                  side: BorderSide(color: context.surfaceBorderColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -708,6 +712,7 @@ class IdleDashboardView extends ConsumerWidget {
   }
 
   Widget _buildStatItem({
+    required BuildContext context,
     required String label,
     required String value,
     required IconData icon,
@@ -715,17 +720,18 @@ class IdleDashboardView extends ConsumerWidget {
   }) {
     return Column(
       children: [
-        Icon(icon, color: color ?? AppColors.textMuted, size: 24),
+        Icon(icon, color: color ?? context.textMutedColor, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
           style: AppTypography.titleMedium.copyWith(
             fontWeight: FontWeight.bold,
+            color: context.textPrimaryColor,
           ),
         ),
         Text(
           label,
-          style: AppTypography.labelSmall,
+          style: AppTypography.labelSmall.copyWith(color: context.textMutedColor),
         ),
       ],
     );
@@ -753,11 +759,11 @@ class DisconnectedDashboardView extends ConsumerWidget {
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.surface,
-                border: Border.all(color: AppColors.surfaceBorder),
+                color: context.surfaceColor,
+                border: Border.all(color: context.surfaceBorderColor),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.accent.withOpacity(0.2),
+                    color: context.accentColor.withAlpha(51),
                     blurRadius: 40,
                     spreadRadius: 10,
                   ),
@@ -766,18 +772,18 @@ class DisconnectedDashboardView extends ConsumerWidget {
               child: Icon(
                 Icons.directions_bike,
                 size: 64,
-                color: AppColors.accent,
+                color: context.accentColor,
               ),
             ),
             const SizedBox(height: 32),
             Text(
               'Connect Your Echelon',
-              style: AppTypography.headlineLarge,
+              style: AppTypography.headlineLarge.copyWith(color: context.textPrimaryColor),
             ),
             const SizedBox(height: 12),
             Text(
               'Scan for nearby Echelon bikes to start your workout',
-              style: AppTypography.bodyLarge,
+              style: AppTypography.bodyLarge.copyWith(color: context.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -787,18 +793,18 @@ class DisconnectedDashboardView extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: context.errorColor.withAlpha(26),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(color: context.errorColor.withAlpha(77)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error),
+                    Icon(Icons.error_outline, color: context.errorColor),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         errorMessage,
-                        style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
+                        style: AppTypography.bodyMedium.copyWith(color: context.errorColor),
                       ),
                     ),
                   ],
@@ -815,12 +821,12 @@ class DisconnectedDashboardView extends ConsumerWidget {
                     ? null
                     : () => ref.read(bleManagerProvider.notifier).startScan(),
                 icon: isScanning
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(AppColors.background),
+                          valueColor: AlwaysStoppedAnimation(context.backgroundColor),
                         ),
                       )
                     : const Icon(Icons.bluetooth_searching),
@@ -833,10 +839,10 @@ class DisconnectedDashboardView extends ConsumerWidget {
               const SizedBox(height: 24),
               Text(
                 'DISCOVERED DEVICES',
-                style: AppTypography.labelLarge,
+                style: AppTypography.labelLarge.copyWith(color: context.textMutedColor),
               ),
               const SizedBox(height: 12),
-              ...discoveredDevices.map((device) => _buildDeviceCard(ref, device)),
+              ...discoveredDevices.map((device) => _buildDeviceCard(context, ref, device)),
             ],
           ],
         ),
@@ -844,11 +850,11 @@ class DisconnectedDashboardView extends ConsumerWidget {
     );
   }
 
-  Widget _buildDeviceCard(WidgetRef ref, EchelonDeviceInfo device) {
+  Widget _buildDeviceCard(BuildContext context, WidgetRef ref, EchelonDeviceInfo device) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () => ref.read(bleManagerProvider.notifier).connectToDevice(device),
@@ -857,19 +863,19 @@ class DisconnectedDashboardView extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.surfaceBorder),
+              border: Border.all(color: context.surfaceBorderColor),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: context.accentColor.withAlpha(26),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.directions_bike,
-                    color: AppColors.accent,
+                    color: context.accentColor,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -879,18 +885,18 @@ class DisconnectedDashboardView extends ConsumerWidget {
                     children: [
                       Text(
                         device.name,
-                        style: AppTypography.titleMedium,
+                        style: AppTypography.titleMedium.copyWith(color: context.textPrimaryColor),
                       ),
                       Text(
                         'Signal: ${device.rssi} dBm',
-                        style: AppTypography.bodyMedium,
+                        style: AppTypography.bodyMedium.copyWith(color: context.textSecondaryColor),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
-                  color: AppColors.textMuted,
+                  color: context.textMutedColor,
                 ),
               ],
             ),
