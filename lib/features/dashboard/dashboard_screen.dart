@@ -415,6 +415,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.remove_circle_outline),
                 iconSize: 40,
                 color: context.accentColor,
+                tooltip: 'Decrease resistance',
               ),
               const SizedBox(width: 16),
               Column(
@@ -431,6 +432,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.add_circle_outline),
                 iconSize: 40,
                 color: context.accentColor,
+                tooltip: 'Increase resistance',
               ),
             ],
           ),
@@ -487,6 +489,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.remove_circle_outline),
                 iconSize: 48,
                 color: context.accentColor,
+                tooltip: 'Decrease resistance',
               ),
               const SizedBox(width: 24),
               // Current level
@@ -513,6 +516,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.add_circle_outline),
                 iconSize: 48,
                 color: context.accentColor,
+                tooltip: 'Increase resistance',
               ),
             ],
           ),
@@ -565,7 +569,9 @@ class IdleDashboardView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bleState = ref.watch(bleManagerProvider);
+    // ⚡ Performance: Only rebuild when relevant state changes
+    final connectedDevice = ref.watch(bleManagerProvider.select((s) => s.connectedDevice));
+    final lastWorkoutMetrics = ref.watch(bleManagerProvider.select((s) => s.lastWorkoutMetrics));
 
     return Center(
       child: SingleChildScrollView(
@@ -601,12 +607,12 @@ class IdleDashboardView extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Connected to ${bleState.connectedDevice?.name ?? "Echelon"}',
+              'Connected to ${connectedDevice?.name ?? "Echelon"}',
               style: AppTypography.bodyLarge.copyWith(color: context.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
             
-            if (bleState.lastWorkoutMetrics != null && bleState.lastWorkoutMetrics!.elapsedSeconds > 0) ...[
+            if (lastWorkoutMetrics != null && lastWorkoutMetrics.elapsedSeconds > 0) ...[
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(20),
@@ -628,19 +634,19 @@ class IdleDashboardView extends ConsumerWidget {
                         _buildStatItem(
                           context: context,
                           label: 'TIME',
-                          value: _formatDuration(bleState.lastWorkoutMetrics!.elapsedSeconds),
+                          value: _formatDuration(lastWorkoutMetrics.elapsedSeconds),
                           icon: Icons.timer_outlined,
                         ),
                         _buildStatItem(
                           context: context,
                           label: 'DIST',
-                          value: '${(bleState.lastWorkoutMetrics!.distance * 0.621371).toStringAsFixed(2)} mi',
+                          value: '${(lastWorkoutMetrics.distance * 0.621371).toStringAsFixed(2)} mi',
                           icon: Icons.straighten,
                         ),
                         _buildStatItem(
                           context: context,
                           label: 'CALS',
-                          value: bleState.lastWorkoutMetrics!.calories.toStringAsFixed(0),
+                          value: lastWorkoutMetrics.calories.toStringAsFixed(0),
                           icon: Icons.local_fire_department,
                           color: context.warningColor,
                         ),
@@ -844,6 +850,27 @@ class DisconnectedDashboardView extends ConsumerWidget {
               const SizedBox(height: 12),
               ...discoveredDevices.map((device) => _buildDeviceCard(context, ref, device)),
             ],
+            
+            // Trial mode button - small and unobtrusive
+            const SizedBox(height: 48),
+            TextButton.icon(
+              onPressed: () => ref.read(bleManagerProvider.notifier).enterTrialMode(),
+              icon: Icon(
+                Icons.science_outlined,
+                size: 14,
+                color: context.textMutedColor.withAlpha(128),
+              ),
+              label: Text(
+                'Enter Trial Mode',
+                style: AppTypography.labelSmall.copyWith(
+                  color: context.textMutedColor.withAlpha(128),
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 0),
+              ),
+            ),
           ],
         ),
       ),

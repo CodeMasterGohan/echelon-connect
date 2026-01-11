@@ -203,7 +203,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final metrics = ref.watch(bleManagerProvider).currentMetrics;
+    // ⚡ Performance: Only watch currentMetrics, not the entire BLE state.
+    // This prevents the full screen from rebuilding during PiP mode.
+    final metrics = ref.watch(bleManagerProvider.select((s) => s.currentMetrics));
     final powerColor = AppColors.getPowerZoneColor(metrics.power, 200);
 
     // PiP overlay content - shows current step, time, and cadence
@@ -287,14 +289,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               tooltip: 'Picture-in-Picture',
             ),
             // Skip step button (visible if not on last step)
-            if (!_isLastStep)
-              IconButton(
-                icon: const Icon(Icons.skip_next),
-                onPressed: _skipStep,
-                tooltip: 'Skip step',
-              ),
+              if (!_isLastStep)
+                IconButton(
+                  icon: const Icon(Icons.skip_next),
+                  color: AppColors.textPrimary,
+                  onPressed: _skipStep,
+                  tooltip: 'Skip step',
+                ),
             IconButton(
               icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
+              color: AppColors.textPrimary,
               onPressed: _togglePause,
               tooltip: _isPaused ? 'Resume' : 'Pause',
             ),
