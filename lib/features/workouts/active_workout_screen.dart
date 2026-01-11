@@ -289,14 +289,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               tooltip: 'Picture-in-Picture',
             ),
             // Skip step button (visible if not on last step)
-            if (!_isLastStep)
-              IconButton(
-                icon: const Icon(Icons.skip_next),
-                onPressed: _skipStep,
-                tooltip: 'Skip step',
-              ),
+              if (!_isLastStep)
+                IconButton(
+                  icon: const Icon(Icons.skip_next),
+                  color: AppColors.textPrimary,
+                  onPressed: _skipStep,
+                  tooltip: 'Skip step',
+                ),
             IconButton(
               icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
+              color: AppColors.textPrimary,
               onPressed: _togglePause,
               tooltip: _isPaused ? 'Resume' : 'Pause',
             ),

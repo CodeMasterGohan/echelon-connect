@@ -415,6 +415,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.remove_circle_outline),
                 iconSize: 40,
                 color: context.accentColor,
+                tooltip: 'Decrease resistance',
               ),
               const SizedBox(width: 16),
               Column(
@@ -431,6 +432,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.add_circle_outline),
                 iconSize: 40,
                 color: context.accentColor,
+                tooltip: 'Increase resistance',
               ),
             ],
           ),
@@ -487,6 +489,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.remove_circle_outline),
                 iconSize: 48,
                 color: context.accentColor,
+                tooltip: 'Decrease resistance',
               ),
               const SizedBox(width: 24),
               // Current level
@@ -513,6 +516,7 @@ class ConnectedDashboardView extends ConsumerWidget {
                 icon: const Icon(Icons.add_circle_outline),
                 iconSize: 48,
                 color: context.accentColor,
+                tooltip: 'Increase resistance',
               ),
             ],
           ),
@@ -846,6 +850,27 @@ class DisconnectedDashboardView extends ConsumerWidget {
               const SizedBox(height: 12),
               ...discoveredDevices.map((device) => _buildDeviceCard(context, ref, device)),
             ],
+            
+            // Trial mode button - small and unobtrusive
+            const SizedBox(height: 48),
+            TextButton.icon(
+              onPressed: () => ref.read(bleManagerProvider.notifier).enterTrialMode(),
+              icon: Icon(
+                Icons.science_outlined,
+                size: 14,
+                color: context.textMutedColor.withAlpha(128),
+              ),
+              label: Text(
+                'Enter Trial Mode',
+                style: AppTypography.labelSmall.copyWith(
+                  color: context.textMutedColor.withAlpha(128),
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 0),
+              ),
+            ),
           ],
         ),
       ),

@@ -43,6 +43,7 @@ class BleManagerState {
   final WorkoutMetrics currentMetrics;
   final WorkoutMetrics? lastWorkoutMetrics;
   final String? errorMessage;
+  final bool isTrialMode;
 
   const BleManagerState({
     this.connectionState = EchelonConnectionState.disconnected,
@@ -51,6 +52,7 @@ class BleManagerState {
     this.currentMetrics = const WorkoutMetrics(),
     this.lastWorkoutMetrics,
     this.errorMessage,
+    this.isTrialMode = false,
   });
 
   BleManagerState copyWith({
@@ -60,6 +62,7 @@ class BleManagerState {
     WorkoutMetrics? currentMetrics,
     WorkoutMetrics? lastWorkoutMetrics,
     String? errorMessage,
+    bool? isTrialMode,
   }) {
     return BleManagerState(
       connectionState: connectionState ?? this.connectionState,
@@ -68,6 +71,7 @@ class BleManagerState {
       currentMetrics: currentMetrics ?? this.currentMetrics,
       lastWorkoutMetrics: lastWorkoutMetrics ?? this.lastWorkoutMetrics,
       errorMessage: errorMessage,
+      isTrialMode: isTrialMode ?? this.isTrialMode,
     );
   }
 
@@ -96,6 +100,12 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
   int _currentResistance = 0;
   DateTime _lastMetricsTime = DateTime.now();
   double _totalCalories = 0;
+  
+  // Trial mode simulation
+  Timer? _trialTimer;
+  double _trialCadencePhase = 0;
+  double _trialDistance = 0;
+  int _trialElapsedSeconds = 0;
 
   /// Start scanning for Echelon devices
   Future<void> startScan() async {
@@ -334,6 +344,12 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
 
   /// Set resistance level
   Future<void> setResistance(int level) async {
+    // In trial mode, just update the local resistance
+    if (state.isTrialMode) {
+      _currentResistance = level.clamp(1, EchelonProtocol.maxResistance);
+      return;
+    }
+    
     if (_writeChar == null || !state.isConnected) return;
 
     try {
@@ -346,6 +362,12 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
 
   /// Disconnect from device
   Future<void> disconnect() async {
+    // If in trial mode, exit trial mode instead
+    if (state.isTrialMode) {
+      exitTrialMode();
+      return;
+    }
+    
     _pollTimer?.cancel();
     _pollTimer = null;
 
@@ -408,11 +430,84 @@ class BleManagerNotifier extends StateNotifier<BleManagerState> {
     if (state.connectionState == EchelonConnectionState.idle) {
       _totalCalories = 0;
       _lastMetricsTime = DateTime.now();
+      
+      // Reset trial mode counters if in trial mode
+      if (state.isTrialMode) {
+        _trialDistance = 0;
+        _trialElapsedSeconds = 0;
+        _trialCadencePhase = 0;
+      }
+      
       state = state.copyWith(
         currentMetrics: const WorkoutMetrics(),
         connectionState: EchelonConnectionState.connected,
       );
     }
+  }
+
+  /// Enter trial mode - simulate a connected bike without BLE
+  void enterTrialMode() {
+    _currentResistance = 15;
+    _totalCalories = 0;
+    _trialDistance = 0;
+    _trialElapsedSeconds = 0;
+    _trialCadencePhase = 0;
+    _lastMetricsTime = DateTime.now();
+    
+    state = state.copyWith(
+      connectionState: EchelonConnectionState.connected,
+      isTrialMode: true,
+      errorMessage: null,
+      currentMetrics: const WorkoutMetrics(),
+    );
+    
+    // Start simulated metrics timer (updates every 500ms for smooth cadence)
+    _trialTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _updateTrialMetrics();
+    });
+  }
+  
+  /// Exit trial mode
+  void exitTrialMode() {
+    _trialTimer?.cancel();
+    _trialTimer = null;
+    
+    state = state.copyWith(
+      connectionState: EchelonConnectionState.disconnected,
+      isTrialMode: false,
+      currentMetrics: const WorkoutMetrics(),
+    );
+  }
+  
+  /// Update simulated metrics for trial mode
+  void _updateTrialMetrics() {
+    if (!state.isTrialMode) return;
+    
+    // Simulate cadence oscillating between 60-90 RPM using sine wave
+    _trialCadencePhase += 0.05;
+    final cadence = (75 + 15 * (0.5 + 0.5 * _trialCadencePhase.remainder(6.28)).clamp(0.0, 1.0) * 
+        ((_trialCadencePhase % 12.56) < 6.28 ? 1 : -1)).round().clamp(60, 90);
+    
+    // Calculate derived metrics
+    final power = PowerCalculator.calculateWatts(_currentResistance, cadence);
+    final speed = PowerCalculator.calculateSpeed(cadence);
+    
+    // Accumulate time, distance, and calories
+    _trialElapsedSeconds++;
+    _trialDistance += speed * 0.5 / 3600; // km traveled in 0.5 seconds
+    _totalCalories += PowerCalculator.calculateCaloriesPerSecond(power, 70) * 0.5;
+    
+    state = state.copyWith(
+      currentMetrics: WorkoutMetrics(
+        cadence: cadence,
+        resistance: _currentResistance,
+        power: power,
+        speed: speed,
+        elapsedSeconds: _trialElapsedSeconds ~/ 2, // Convert to actual seconds
+        distance: _trialDistance,
+        calories: _totalCalories,
+      ),
+    );
   }
 
   @override
