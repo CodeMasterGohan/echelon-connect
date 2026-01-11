@@ -565,7 +565,9 @@ class IdleDashboardView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bleState = ref.watch(bleManagerProvider);
+    // ⚡ Performance: Only rebuild when relevant state changes
+    final connectedDevice = ref.watch(bleManagerProvider.select((s) => s.connectedDevice));
+    final lastWorkoutMetrics = ref.watch(bleManagerProvider.select((s) => s.lastWorkoutMetrics));
 
     return Center(
       child: SingleChildScrollView(
@@ -601,12 +603,12 @@ class IdleDashboardView extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Connected to ${bleState.connectedDevice?.name ?? "Echelon"}',
+              'Connected to ${connectedDevice?.name ?? "Echelon"}',
               style: AppTypography.bodyLarge.copyWith(color: context.textSecondaryColor),
               textAlign: TextAlign.center,
             ),
             
-            if (bleState.lastWorkoutMetrics != null && bleState.lastWorkoutMetrics!.elapsedSeconds > 0) ...[
+            if (lastWorkoutMetrics != null && lastWorkoutMetrics.elapsedSeconds > 0) ...[
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(20),
@@ -628,19 +630,19 @@ class IdleDashboardView extends ConsumerWidget {
                         _buildStatItem(
                           context: context,
                           label: 'TIME',
-                          value: _formatDuration(bleState.lastWorkoutMetrics!.elapsedSeconds),
+                          value: _formatDuration(lastWorkoutMetrics.elapsedSeconds),
                           icon: Icons.timer_outlined,
                         ),
                         _buildStatItem(
                           context: context,
                           label: 'DIST',
-                          value: '${(bleState.lastWorkoutMetrics!.distance * 0.621371).toStringAsFixed(2)} mi',
+                          value: '${(lastWorkoutMetrics.distance * 0.621371).toStringAsFixed(2)} mi',
                           icon: Icons.straighten,
                         ),
                         _buildStatItem(
                           context: context,
                           label: 'CALS',
-                          value: bleState.lastWorkoutMetrics!.calories.toStringAsFixed(0),
+                          value: lastWorkoutMetrics.calories.toStringAsFixed(0),
                           icon: Icons.local_fire_department,
                           color: context.warningColor,
                         ),
