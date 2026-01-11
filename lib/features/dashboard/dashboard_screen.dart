@@ -17,22 +17,14 @@ import 'package:echelon_connect/features/workouts/workout_styles_screen.dart';
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  String _formatDuration(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    final secs = seconds % 60;
-    if (hours > 0) {
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-    }
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bleState = ref.watch(bleManagerProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final metrics = bleState.currentMetrics;
-    final isDark = themeMode == ThemeMode.dark;
+    // Only watch what is needed for the scaffolding and view switching.
+    // This prevents the entire Scaffold (and AppBar) from rebuilding on every metric update.
+    final isConnected = ref.watch(bleManagerProvider.select((s) => s.isConnected));
+    final isWorkoutActive = ref.watch(bleManagerProvider.select((s) => s.isWorkoutActive));
+    final connectionState = ref.watch(bleManagerProvider.select((s) => s.connectionState));
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     // Wrap entire scaffold in PipWidget - in PiP mode, only show the overlay (no AppBar)
     return PipWidget(
@@ -46,7 +38,7 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               Icon(
                 Icons.bolt,
-                color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
+                color: isConnected ? AppColors.success : AppColors.textMuted,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -61,7 +53,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
           actions: [
             // Custom Workouts Button (always visible when connected)
-            if (bleState.isConnected)
+            if (isConnected)
               IconButton(
                 onPressed: () {
                   Navigator.push(
@@ -76,7 +68,7 @@ class DashboardScreen extends ConsumerWidget {
                 tooltip: 'Custom Workouts',
               ),
             // Picture-in-Picture Button (only during workout)
-            if (bleState.isWorkoutActive)
+            if (isWorkoutActive)
               IconButton(
                 onPressed: () => AndroidPIP().enterPipMode(
                   aspectRatio: [16, 9],
@@ -102,12 +94,12 @@ class DashboardScreen extends ConsumerWidget {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: bleState.isConnected 
+                color: isConnected
                     ? AppColors.success.withOpacity(0.2)
                     : AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: bleState.isConnected ? AppColors.success : AppColors.surfaceBorder,
+                  color: isConnected ? AppColors.success : AppColors.surfaceBorder,
                 ),
               ),
               child: Row(
@@ -118,14 +110,14 @@ class DashboardScreen extends ConsumerWidget {
                     height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
+                      color: isConnected ? AppColors.success : AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    bleState.isConnected ? 'Connected' : 'Disconnected',
+                    isConnected ? 'Connected' : 'Disconnected',
                     style: AppTypography.labelMedium.copyWith(
-                      color: bleState.isConnected ? AppColors.success : AppColors.textMuted,
+                      color: isConnected ? AppColors.success : AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -134,17 +126,35 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         body: SafeArea(
-          child: bleState.isWorkoutActive
-              ? _buildConnectedView(context, ref, metrics)
-              : bleState.connectionState == EchelonConnectionState.idle
-                  ? _buildIdleView(context, ref, bleState)
-                  : _buildDisconnectedView(context, ref, bleState),
+          child: isWorkoutActive
+              ? const ConnectedDashboardView()
+              : connectionState == EchelonConnectionState.idle
+                  ? const IdleDashboardView()
+                  : const DisconnectedDashboardView(),
         ),
       ),
     );
   }
+}
 
-  Widget _buildConnectedView(BuildContext context, WidgetRef ref, WorkoutMetrics metrics) {
+class ConnectedDashboardView extends ConsumerWidget {
+  const ConnectedDashboardView({super.key});
+
+  String _formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // This widget listens to metrics updates, so it will rebuild frequently.
+    // However, the parent DashboardScreen will NOT rebuild.
+    final metrics = ref.watch(bleManagerProvider.select((s) => s.currentMetrics));
     final powerColor = AppColors.getPowerZoneColor(metrics.power, 200); // TODO: Get FTP from settings
 
     return LayoutBuilder(
@@ -537,8 +547,25 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildIdleView(BuildContext context, WidgetRef ref, BleManagerState bleState) {
+class IdleDashboardView extends ConsumerWidget {
+  const IdleDashboardView({super.key});
+
+  String _formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bleState = ref.watch(bleManagerProvider);
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
@@ -680,7 +707,41 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDisconnectedView(BuildContext context, WidgetRef ref, BleManagerState bleState) {
+  Widget _buildStatItem({
+    required String label,
+    required String value,
+    required IconData icon,
+    Color? color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color ?? AppColors.textMuted, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: AppTypography.labelSmall,
+        ),
+      ],
+    );
+  }
+}
+
+class DisconnectedDashboardView extends ConsumerWidget {
+  const DisconnectedDashboardView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch relevant state for disconnected view
+    final isScanning = ref.watch(bleManagerProvider.select((s) => s.isScanning));
+    final errorMessage = ref.watch(bleManagerProvider.select((s) => s.errorMessage));
+    final discoveredDevices = ref.watch(bleManagerProvider.select((s) => s.discoveredDevices));
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -722,7 +783,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             
             // Error message
-            if (bleState.errorMessage != null) ...[
+            if (errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -736,7 +797,7 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        bleState.errorMessage!,
+                        errorMessage,
                         style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
                       ),
                     ),
@@ -750,10 +811,10 @@ class DashboardScreen extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: bleState.isScanning
+                onPressed: isScanning
                     ? null
                     : () => ref.read(bleManagerProvider.notifier).startScan(),
-                icon: bleState.isScanning
+                icon: isScanning
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -763,19 +824,19 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       )
                     : const Icon(Icons.bluetooth_searching),
-                label: Text(bleState.isScanning ? 'SCANNING...' : 'SCAN FOR DEVICES'),
+                label: Text(isScanning ? 'SCANNING...' : 'SCAN FOR DEVICES'),
               ),
             ),
             
             // Discovered devices list
-            if (bleState.discoveredDevices.isNotEmpty) ...[
+            if (discoveredDevices.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text(
                 'DISCOVERED DEVICES',
                 style: AppTypography.labelLarge,
               ),
               const SizedBox(height: 12),
-              ...bleState.discoveredDevices.map((device) => _buildDeviceCard(ref, device)),
+              ...discoveredDevices.map((device) => _buildDeviceCard(ref, device)),
             ],
           ],
         ),
@@ -836,29 +897,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-  Widget _buildStatItem({
-    required String label,
-    required String value,
-    required IconData icon,
-    Color? color,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, color: color ?? AppColors.textMuted, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: AppTypography.titleMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: AppTypography.labelSmall,
-        ),
-      ],
     );
   }
 }
