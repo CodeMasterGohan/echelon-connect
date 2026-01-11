@@ -14,8 +14,8 @@ class PipOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bleState = ref.watch(bleManagerProvider);
-    final metrics = bleState.currentMetrics;
+    // ⚡ Performance: Only rebuild when currentMetrics changes, not on any state change
+    final metrics = ref.watch(bleManagerProvider.select((s) => s.currentMetrics));
     final pelotonResistance = PowerCalculator.bikeResistanceToPeloton(metrics.resistance);
 
     return Container(
