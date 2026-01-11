@@ -68,6 +68,60 @@ class AppColors {
   }
 }
 
+/// Light mode color palette
+class AppColorsLight {
+  // Primary colors - Clean light theme
+  static const Color background = Color(0xFFF8F9FC);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceLight = Color(0xFFF0F2F5);
+  static const Color surfaceBorder = Color(0xFFE0E4EB);
+
+  // Accent colors (slightly adjusted for light mode contrast)
+  static const Color accent = Color(0xFF0099CC);
+  static const Color accentGlow = Color(0x400099CC);
+  static const Color secondary = Color(0xFF6B4EE6);
+  static const Color success = Color(0xFF00B860);
+  static const Color warning = Color(0xFFE69500);
+  static const Color error = Color(0xFFE53935);
+
+  // Text colors
+  static const Color textPrimary = Color(0xFF1A1A2E);
+  static const Color textSecondary = Color(0xFF4A4A6A);
+  static const Color textMuted = Color(0xFF8A8AAA);
+
+  // Power zone colors (same as dark mode)
+  static const Color zoneRecovery = Color(0xFF4CAF50);
+  static const Color zoneEndurance = Color(0xFF8BC34A);
+  static const Color zoneTempo = Color(0xFFFFEB3B);
+  static const Color zoneThreshold = Color(0xFFFF9800);
+  static const Color zoneVO2Max = Color(0xFFF44336);
+  static const Color zoneAnaerobic = Color(0xFF9C27B0);
+}
+
+/// Theme-aware color helper - use this in widgets to get the current theme colors
+extension ThemeColors on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  
+  // Background colors
+  Color get backgroundColor => isDark ? AppColors.background : AppColorsLight.background;
+  Color get surfaceColor => isDark ? AppColors.surface : AppColorsLight.surface;
+  Color get surfaceLightColor => isDark ? AppColors.surfaceLight : AppColorsLight.surfaceLight;
+  Color get surfaceBorderColor => isDark ? AppColors.surfaceBorder : AppColorsLight.surfaceBorder;
+  
+  // Accent colors
+  Color get accentColor => isDark ? AppColors.accent : AppColorsLight.accent;
+  Color get accentGlowColor => isDark ? AppColors.accentGlow : AppColorsLight.accentGlow;
+  Color get secondaryColor => isDark ? AppColors.secondary : AppColorsLight.secondary;
+  Color get successColor => isDark ? AppColors.success : AppColorsLight.success;
+  Color get warningColor => isDark ? AppColors.warning : AppColorsLight.warning;
+  Color get errorColor => isDark ? AppColors.error : AppColorsLight.error;
+  
+  // Text colors
+  Color get textPrimaryColor => isDark ? AppColors.textPrimary : AppColorsLight.textPrimary;
+  Color get textSecondaryColor => isDark ? AppColors.textSecondary : AppColorsLight.textSecondary;
+  Color get textMutedColor => isDark ? AppColors.textMuted : AppColorsLight.textMuted;
+}
+
 /// App typography
 class AppTypography {
   static TextStyle get displayLarge => GoogleFonts.inter(
@@ -219,6 +273,69 @@ class AppTheme {
         ),
         dividerTheme: const DividerThemeData(
           color: AppColors.surfaceBorder,
+          thickness: 1,
+        ),
+      );
+
+  static ThemeData get lightTheme => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: AppColorsLight.background,
+        colorScheme: const ColorScheme.light(
+          primary: AppColorsLight.accent,
+          secondary: AppColorsLight.secondary,
+          surface: AppColorsLight.surface,
+          error: AppColorsLight.error,
+        ),
+        cardTheme: CardThemeData(
+          color: AppColorsLight.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColorsLight.surfaceBorder, width: 1),
+          ),
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColorsLight.background,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: AppTypography.titleLarge.copyWith(color: AppColorsLight.textPrimary),
+          iconTheme: const IconThemeData(color: AppColorsLight.textPrimary),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColorsLight.accent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            textStyle: AppTypography.titleMedium.copyWith(
+              color: Colors.white,
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColorsLight.accent,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            side: const BorderSide(color: AppColorsLight.accent, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: AppColorsLight.accent,
+          ),
+        ),
+        iconTheme: const IconThemeData(
+          color: AppColorsLight.textSecondary,
+          size: 24,
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColorsLight.surfaceBorder,
           thickness: 1,
         ),
       );
