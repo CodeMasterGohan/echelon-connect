@@ -203,7 +203,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final metrics = ref.watch(bleManagerProvider).currentMetrics;
+    // ⚡ Performance: Only watch currentMetrics, not the entire BLE state.
+    // This prevents the full screen from rebuilding during PiP mode.
+    final metrics = ref.watch(bleManagerProvider.select((s) => s.currentMetrics));
     final powerColor = AppColors.getPowerZoneColor(metrics.power, 200);
 
     // PiP overlay content - shows current step, time, and cadence
