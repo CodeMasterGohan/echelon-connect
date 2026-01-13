@@ -7,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:android_pip/android_pip.dart';
 import 'package:android_pip/pip_widget.dart';
 import 'package:echelon_connect/core/models/workout.dart';
+import 'package:echelon_connect/core/models/workout_session.dart';
+import 'package:echelon_connect/core/services/workout_history_storage.dart';
 import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
+import 'package:echelon_connect/features/workouts/session_summary_screen.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final Workout workout;
@@ -26,6 +29,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   int _totalElapsedSeconds = 0;
   Timer? _timer;
   bool _isPaused = false;
+
+  // Metrics accumulation for average calculation
+  int _totalPower = 0;
+  int _totalCadence = 0;
+  double _totalSpeed = 0.0;
+  int _sampleCount = 0;
+  final DateTime _startTime = DateTime.now();
 
   WorkoutStep get _currentStep => widget.workout.steps[_currentStepIndex];
   int get _stepRemainingSeconds => _currentStep.durationSeconds - _stepElapsedSeconds;
@@ -56,6 +66,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   void _tick() {
     if (_isPaused) return;
+
+    // Accumulate metrics
+    final metrics = ref.read(bleManagerProvider).currentMetrics;
+    _totalPower += metrics.power;
+    _totalCadence += metrics.cadence;
+    _totalSpeed += metrics.speed;
+    _sampleCount++;
 
     setState(() {
       _stepElapsedSeconds++;
@@ -100,7 +117,55 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   void _completeWorkout() {
     _timer?.cancel();
-    _showCompletionDialog();
+    _saveAndShowSummary();
+  }
+
+  void _saveAndShowSummary() {
+    // Calculate averages
+    final avgPower = _sampleCount > 0 ? (_totalPower / _sampleCount).round() : 0;
+    final avgCadence = _sampleCount > 0 ? (_totalCadence / _sampleCount).round() : 0;
+    final avgSpeed = _sampleCount > 0 ? (_totalSpeed / _sampleCount) : 0.0;
+
+    // Estimate calories
+    // Formula: kcal = (AvgPower * DurationSeconds * 0.000996)
+    // Using a simpler conversion: 1 Joule = 0.000239 kcal
+    // Energy (J) = Power (W) * Time (s)
+    // Metabolic Efficiency ~24% => Divide by 0.24
+    final energyJoules = avgPower * _totalElapsedSeconds;
+    final totalCalories = (energyJoules * 0.000239006 / 0.24).round();
+
+    // Distance (approximate based on avg speed in mph if speed is mph, or if speed is kph?)
+    // Echelon speed is usually MPH. Let's assume MPH based on UI.
+    // Distance = Speed * Time(h)
+    final distanceMiles = avgSpeed * (_totalElapsedSeconds / 3600);
+
+    final session = WorkoutSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      workoutId: widget.workout.id,
+      workoutName: widget.workout.name,
+      startTime: _startTime,
+      endTime: DateTime.now(),
+      durationSeconds: _totalElapsedSeconds,
+      totalCalories: totalCalories,
+      avgPower: avgPower,
+      avgCadence: avgCadence,
+      avgSpeed: avgSpeed,
+      distanceMiles: distanceMiles,
+    );
+
+    // Save to storage
+    ref.read(workoutHistoryStorageProvider.notifier).saveSession(session);
+
+    // End BLE workout
+    ref.read(bleManagerProvider.notifier).endWorkout();
+
+    // Navigate to summary
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SessionSummaryScreen(session: session),
+      ),
+    );
   }
 
   void _endWorkoutEarly() {
@@ -130,41 +195,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: AppColors.success),
-            const SizedBox(width: 12),
-            const Text('Workout Complete!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Great job finishing ${widget.workout.name}!'),
-            const SizedBox(height: 16),
-            Text('Total time: ${_formatDuration(_totalElapsedSeconds)}'),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ref.read(bleManagerProvider.notifier).endWorkout();
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close active workout screen
-            },
-            child: const Text('DONE'),
-          ),
-        ],
-      ),
-    );
-  }
 
   String _formatDuration(int seconds) {
     final m = seconds ~/ 60;
