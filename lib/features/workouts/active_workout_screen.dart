@@ -10,6 +10,7 @@ import 'package:echelon_connect/core/models/workout.dart';
 import 'package:echelon_connect/core/bluetooth/ble_manager.dart';
 import 'package:echelon_connect/core/bluetooth/echelon_protocol.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
+import 'package:echelon_connect/features/workouts/workout_completion_screen.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final Workout workout;
@@ -32,6 +33,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Timer? _timer;
   bool _isPaused = false;
   bool _nextStepResistanceSent = false; // Track if we've sent the next step's resistance early
+
+  // Grading system state
+  int _totalGradedSamples = 0;
+  double _totalScore = 0.0;
+  int _transitionBufferRemaining = 3; // Start with a 3-second buffer for first segment
 
   WorkoutStep get _currentStep => widget.workout.steps[_currentStepIndex];
   int get _stepRemainingSeconds => _currentStep.durationSeconds - _stepElapsedSeconds;
@@ -71,6 +77,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       _stepElapsedSeconds++;
       _totalElapsedSeconds++;
 
+      // === Cadence Grading ===
+      _gradeCurrentSecond();
+
       // Anticipate resistance change: send next step's resistance early to account for bike delay
       // Only do this if there's a next step and we haven't already sent it
       if (!_isLastStep && !_nextStepResistanceSent && 
@@ -94,12 +103,53 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     });
   }
 
+  /// Grade the user's cadence for this second
+  void _gradeCurrentSecond() {
+    // Transition buffer: skip grading during segment transitions
+    if (_transitionBufferRemaining > 0) {
+      _transitionBufferRemaining--;
+      return;
+    }
+
+    final targetCadence = _currentStep.targetCadence;
+
+    // If target is null (MAX effort), give full credit
+    if (targetCadence == null) {
+      _totalScore += 1.0;
+      _totalGradedSamples++;
+      return;
+    }
+
+    // Get current actual cadence from BLE metrics
+    final actualCadence = ref.read(bleManagerProvider).currentMetrics.cadence;
+    final diff = (actualCadence - targetCadence).abs();
+
+    double secondScore;
+    if (diff <= 5) {
+      // Within ±5 RPM grace zone → perfect credit
+      secondScore = 1.0;
+    } else {
+      // Linear falloff: 0 credit at 25 RPM off target
+      secondScore = (1.0 - (diff - 5) / 20.0).clamp(0.0, 1.0);
+    }
+
+    _totalScore += secondScore;
+    _totalGradedSamples++;
+  }
+
+  /// Calculate the final score (0-100)
+  int _calculateFinalScore() {
+    if (_totalGradedSamples == 0) return 100; // No graded samples = perfect
+    return (_totalScore / _totalGradedSamples * 100).round().clamp(0, 100);
+  }
+
   void _advanceToNextStep({bool skipAnticipation = false}) {
     final previousStepIndex = _currentStepIndex;
     setState(() {
       _currentStepIndex++;
       _stepElapsedSeconds = 0;
       _nextStepResistanceSent = false; // Reset for next step transition
+      _transitionBufferRemaining = 3; // 3-second grace period for new segment
     });
     // If anticipation wasn't triggered (short step or skipping), send resistance now
     if (skipAnticipation || widget.workout.steps[previousStepIndex].durationSeconds < _resistanceAnticipationSeconds) {
@@ -129,7 +179,19 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   void _completeWorkout() {
     _timer?.cancel();
-    _showCompletionDialog();
+    final finalScore = _calculateFinalScore();
+    
+    // Navigate to completion screen (replace this screen)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkoutCompletionScreen(
+          workout: widget.workout,
+          score: finalScore,
+          totalDurationSeconds: _totalElapsedSeconds,
+        ),
+      ),
+    );
   }
 
   void _endWorkoutEarly() {
@@ -146,49 +208,22 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close dialog
               _timer?.cancel();
-              ref.read(bleManagerProvider.notifier).endWorkout();
-              Navigator.pop(context);
+              final finalScore = _calculateFinalScore();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WorkoutCompletionScreen(
+                    workout: widget.workout,
+                    score: finalScore,
+                    totalDurationSeconds: _totalElapsedSeconds,
+                  ),
+                ),
+              );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('END'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: AppColors.success),
-            const SizedBox(width: 12),
-            const Text('Workout Complete!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Great job finishing ${widget.workout.name}!'),
-            const SizedBox(height: 16),
-            Text('Total time: ${_formatDuration(_totalElapsedSeconds)}'),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ref.read(bleManagerProvider.notifier).endWorkout();
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close active workout screen
-            },
-            child: const Text('DONE'),
           ),
         ],
       ),

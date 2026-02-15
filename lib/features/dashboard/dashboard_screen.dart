@@ -12,6 +12,7 @@ import 'package:echelon_connect/features/dashboard/widgets/metric_tile.dart';
 import 'package:echelon_connect/features/dashboard/widgets/pip_overlay.dart';
 import 'package:echelon_connect/core/providers/theme_provider.dart';
 import 'package:echelon_connect/features/workouts/workout_styles_screen.dart';
+import 'package:echelon_connect/features/workouts/workout_history_screen.dart';
 
 
 class DashboardScreen extends ConsumerWidget {
@@ -694,8 +695,28 @@ class IdleDashboardView extends ConsumerWidget {
             ),
             
             const SizedBox(height: 16),
+
+            // Workout History button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()),
+                  );
+                },
+                icon: const Icon(Icons.history),
+                label: const Text('WORKOUT HISTORY'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.accentColor,
+                  side: BorderSide(color: context.accentColor.withAlpha(128)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
             
-            // Disconnect button
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -850,6 +871,27 @@ class DisconnectedDashboardView extends ConsumerWidget {
               const SizedBox(height: 12),
               ...discoveredDevices.map((device) => _buildDeviceCard(context, ref, device)),
             ],
+            
+            // Workout History button
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()),
+                  );
+                },
+                icon: const Icon(Icons.history),
+                label: const Text('WORKOUT HISTORY'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.accentColor,
+                  side: BorderSide(color: context.accentColor.withAlpha(128)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
             
             // Trial mode button - small and unobtrusive
             const SizedBox(height: 48),

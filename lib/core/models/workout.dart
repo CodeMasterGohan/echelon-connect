@@ -203,3 +203,123 @@ class WorkoutAdapter extends TypeAdapter<Workout> {
     writer.write(obj.lastUsedAt?.millisecondsSinceEpoch);
   }
 }
+
+/// A completed workout record with score and user attribution
+class CompletedWorkout {
+  final String id;
+  final String workoutName;
+  final String workoutId;
+  final DateTime completionDate;
+  final int score; // 0-100
+  final String user; // "Russell" or "Haley"
+  final int totalDurationSeconds;
+
+  CompletedWorkout({
+    required this.id,
+    required this.workoutName,
+    required this.workoutId,
+    required this.completionDate,
+    required this.score,
+    required this.user,
+    required this.totalDurationSeconds,
+  });
+
+  /// Create a new completed workout with a generated ID
+  factory CompletedWorkout.create({
+    required String workoutName,
+    required String workoutId,
+    required int score,
+    required String user,
+    required int totalDurationSeconds,
+  }) {
+    return CompletedWorkout(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      workoutName: workoutName,
+      workoutId: workoutId,
+      completionDate: DateTime.now(),
+      score: score.clamp(0, 100),
+      user: user,
+      totalDurationSeconds: totalDurationSeconds,
+    );
+  }
+
+  /// Letter grade based on score
+  String get letterGrade {
+    if (score >= 90) return 'A';
+    if (score >= 80) return 'B';
+    if (score >= 70) return 'C';
+    if (score >= 60) return 'D';
+    return 'F';
+  }
+
+  /// Formatted completion date
+  String get formattedDate {
+    final d = completionDate;
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+
+  /// Formatted duration
+  String get formattedDuration {
+    final hours = totalDurationSeconds ~/ 3600;
+    final minutes = (totalDurationSeconds % 3600) ~/ 60;
+    final seconds = totalDurationSeconds % 60;
+    if (hours > 0) return '${hours}h ${minutes}m';
+    if (minutes > 0) return '${minutes}m ${seconds}s';
+    return '${seconds}s';
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'workoutName': workoutName,
+    'workoutId': workoutId,
+    'completionDate': completionDate.toIso8601String(),
+    'score': score,
+    'user': user,
+    'totalDurationSeconds': totalDurationSeconds,
+  };
+
+  factory CompletedWorkout.fromJson(Map<String, dynamic> json) => CompletedWorkout(
+    id: json['id'] as String,
+    workoutName: json['workoutName'] as String,
+    workoutId: json['workoutId'] as String,
+    completionDate: DateTime.parse(json['completionDate'] as String),
+    score: json['score'] as int,
+    user: json['user'] as String,
+    totalDurationSeconds: json['totalDurationSeconds'] as int,
+  );
+
+  @override
+  String toString() => 'CompletedWorkout($workoutName by $user: $score/100 on $formattedDate)';
+}
+
+/// Hive TypeAdapter for CompletedWorkout
+class CompletedWorkoutAdapter extends TypeAdapter<CompletedWorkout> {
+  @override
+  final int typeId = 12;
+
+  @override
+  CompletedWorkout read(BinaryReader reader) {
+    return CompletedWorkout(
+      id: reader.read() as String,
+      workoutName: reader.read() as String,
+      workoutId: reader.read() as String,
+      completionDate: DateTime.fromMillisecondsSinceEpoch(reader.read() as int),
+      score: reader.read() as int,
+      user: reader.read() as String,
+      totalDurationSeconds: reader.read() as int,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, CompletedWorkout obj) {
+    writer.write(obj.id);
+    writer.write(obj.workoutName);
+    writer.write(obj.workoutId);
+    writer.write(obj.completionDate.millisecondsSinceEpoch);
+    writer.write(obj.score);
+    writer.write(obj.user);
+    writer.write(obj.totalDurationSeconds);
+  }
+}

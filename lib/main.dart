@@ -11,12 +11,21 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:echelon_connect/features/dashboard/dashboard_screen.dart';
 import 'package:echelon_connect/theme/app_theme.dart';
 import 'package:echelon_connect/core/providers/theme_provider.dart';
+import 'package:echelon_connect/core/models/workout.dart';
+import 'package:echelon_connect/core/services/completed_workout_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Hive for local storage
   await Hive.initFlutter();
+
+  // Register Hive adapters
+  Hive.registerAdapter(CompletedWorkoutAdapter());
+
+  // Initialize completed workout storage
+  final completedWorkoutStorage = CompletedWorkoutStorage();
+  await completedWorkoutStorage.init();
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
@@ -37,8 +46,11 @@ void main() async {
   );
 
   runApp(
-    const ProviderScope(
-      child: EchelonConnectApp(),
+    ProviderScope(
+      overrides: [
+        completedWorkoutStorageProvider.overrideWithValue(completedWorkoutStorage),
+      ],
+      child: const EchelonConnectApp(),
     ),
   );
 }
