@@ -15,6 +15,7 @@ enum WorkoutCategory {
   tabata,
   rollingHills,
   powerPyramid,
+  norwegian4x4,
 }
 
 /// Extension for category display info
@@ -31,6 +32,8 @@ extension WorkoutCategoryExt on WorkoutCategory {
         return 'Rolling Hills';
       case WorkoutCategory.powerPyramid:
         return 'Power Pyramid';
+      case WorkoutCategory.norwegian4x4:
+        return 'Norwegian 4x4';
     }
   }
 
@@ -46,6 +49,8 @@ extension WorkoutCategoryExt on WorkoutCategory {
         return '⛰️';
       case WorkoutCategory.powerPyramid:
         return '🔺';
+      case WorkoutCategory.norwegian4x4:
+        return '🇳🇴';
     }
   }
 
@@ -61,6 +66,8 @@ extension WorkoutCategoryExt on WorkoutCategory {
         return 'Simulated terrain with peaks and valleys';
       case WorkoutCategory.powerPyramid:
         return 'Build up to peak resistance then descend';
+      case WorkoutCategory.norwegian4x4:
+        return 'VO₂ max HIIT — 4 × 4 min at 85–95% HR max';
     }
   }
 }
@@ -417,6 +424,58 @@ final Map<WorkoutCategory, Map<WorkoutDifficulty, Workout>> workoutsByCategory =
         WorkoutStep(name: 'Drop', resistance: 16, durationSeconds: 60, targetCadence: 90),
         WorkoutStep(name: 'Fast Spin', resistance: 14, durationSeconds: 60, targetCadence: 105),
         WorkoutStep(name: 'Cooldown', resistance: 8, durationSeconds: 180, targetCadence: 60),
+      ],
+      createdAt: DateTime(2024, 1, 1),
+    ),
+  },
+
+  // ============ NORWEGIAN 4x4 ============
+  WorkoutCategory.norwegian4x4: {
+    WorkoutDifficulty.easy: Workout(
+      id: 'norwegian4x4_easy',
+      name: '🇳🇴 Norwegian 4x4 - Easy',
+      steps: [
+        WorkoutStep(name: 'Warm-up', resistance: 8, durationSeconds: 480, targetCadence: 80),
+        WorkoutStep(name: 'Interval 1', resistance: 16, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 1', resistance: 8, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 2', resistance: 16, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 2', resistance: 8, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 3', resistance: 16, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 3', resistance: 8, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 4', resistance: 16, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Cool-down', resistance: 6, durationSeconds: 240, targetCadence: 65),
+      ],
+      createdAt: DateTime(2024, 1, 1),
+    ),
+    WorkoutDifficulty.medium: Workout(
+      id: 'norwegian4x4_medium',
+      name: '🇳🇴 Norwegian 4x4 - Medium',
+      steps: [
+        WorkoutStep(name: 'Warm-up', resistance: 10, durationSeconds: 480, targetCadence: 80),
+        WorkoutStep(name: 'Interval 1', resistance: 22, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 1', resistance: 10, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 2', resistance: 22, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 2', resistance: 10, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 3', resistance: 22, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 3', resistance: 10, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 4', resistance: 22, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Cool-down', resistance: 8, durationSeconds: 240, targetCadence: 65),
+      ],
+      createdAt: DateTime(2024, 1, 1),
+    ),
+    WorkoutDifficulty.hard: Workout(
+      id: 'norwegian4x4_hard',
+      name: '🇳🇴 Norwegian 4x4 - Hard',
+      steps: [
+        WorkoutStep(name: 'Warm-up', resistance: 12, durationSeconds: 480, targetCadence: 80),
+        WorkoutStep(name: 'Interval 1', resistance: 28, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 1', resistance: 12, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 2', resistance: 28, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 2', resistance: 12, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 3', resistance: 28, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Active Recovery 3', resistance: 12, durationSeconds: 180, targetCadence: 75),
+        WorkoutStep(name: 'Interval 4', resistance: 28, durationSeconds: 240, targetCadence: null),
+        WorkoutStep(name: 'Cool-down', resistance: 8, durationSeconds: 240, targetCadence: 65),
       ],
       createdAt: DateTime(2024, 1, 1),
     ),
